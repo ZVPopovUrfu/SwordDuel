@@ -8,9 +8,9 @@ public class SwordPhysics : MonoBehaviour
     [SerializeField] private float swordLength = 2f;  // Длина меча
 
     [Header("Physics Settings")]
-    [SerializeField] private float knockbackDistance = 1.5f;
+    [SerializeField] private float knockbackDistance = 2.25f;
     [SerializeField] private float knockbackDuration = 0.15f;
-    [SerializeField] private float rotationKnockback = 60f;
+    [SerializeField] private float rotationKnockback = 90f;
 
     [Header("Knockback Multipliers")]
     [SerializeField] private float strongKnockback = 1.0f;

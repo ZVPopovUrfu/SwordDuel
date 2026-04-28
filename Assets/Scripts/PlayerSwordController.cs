@@ -4,8 +4,8 @@ using UnityEngine.InputSystem;
 public class PlayerSwordController : MonoBehaviour
 {
     [Header("Movement Settings")]
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float rotationSpeed = 180f;
+    [SerializeField] private float moveSpeed = 3f;
+    [SerializeField] private float rotationSpeed = 150f;
 
     [Header("Smooth Settings")]
     [SerializeField] private float acceleration = 8f;
@@ -105,11 +105,35 @@ public class PlayerSwordController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Попадание по персонажу врага
-        if (other.CompareTag("Enemy"))
+        if (!other.CompareTag("Enemy"))
+            return;
+
+        if (!IsBladeOrTipTouchingCharacter(other))
+            return;
+
+        _gameManager?.OnPlayerHit();
+    }
+
+    private bool IsBladeOrTipTouchingCharacter(Collider2D characterCollider)
+    {
+        Collider2D[] myColliders = GetComponentsInChildren<Collider2D>();
+
+        foreach (Collider2D col in myColliders)
         {
-            _gameManager?.OnPlayerHit();  // ← используем ссылку из инспектора
+            if (col == null) continue;
+
+            bool isBladeOrTip =
+                col.CompareTag("BladeZone") ||
+                col.CompareTag("TipZone");
+
+            if (!isBladeOrTip)
+                continue;
+
+            if (col.IsTouching(characterCollider))
+                return true;
         }
+
+        return false;
     }
 
     void OnEnable()

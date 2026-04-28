@@ -3,46 +3,57 @@ using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
 using System.Collections;
+using static SwordActionTypes;
 
 public class MLSword : Agent
 {
-    [Header("Arena Reference")]
-    [SerializeField] private Transform _arenaCenter;  // Центр арены для локальных координат
-
-    [Header("References")]
-    [SerializeField] private Transform _enemyCharacter;
-    [SerializeField] private Transform _myCharacter;
-    [SerializeField] private Transform _enemySword;
+    [Header("Core")]
+    [SerializeField] private SwordCombatContext _context;
+    [SerializeField] private SwordActionExecutor _executor;
     [SerializeField] private SwordPhysics _swordPhysics;
     [SerializeField] private Rigidbody2D _rb;
 
-    [Header("Spawn Settings")]
+    [Header("Opponent")]
+    [SerializeField] private MLSword _opponentAgent;
+    [SerializeField] private Transform _opponentCharacterRoot;
+
+    [Header("Spawn")]
     [SerializeField] private Transform _mySpawnPoint;
-    [SerializeField] private Transform _enemySpawnPoint;
-    [SerializeField] private float _spawnRandomOffset = 0.5f;  // Случайное смещение при спавне
+    [SerializeField] private float _spawnRandomOffset = 0.5f;
+    [SerializeField] private bool _randomizeRotation = true;
 
-    [Header("Movement Settings")]
-    [SerializeField] private float _maxMoveForce = 5f;
-    [SerializeField] private float _maxTorqueForce = 120f;     // Уменьшено для плавности
-    [SerializeField] private float _angularDrag = 3f;          // Для инерции вращения
+    [Header("Mode")]
+    [Tooltip("False для ML-сцены обучения. True для TESTMLINGAME, где счет и сброс делает NewGameManager.")]
+    [SerializeField] private bool _useGameManagerMode = false;
 
-    [Header("Arena Settings")]
-    [SerializeField] private float _arenaWidth = 20f;
-    [SerializeField] private float _arenaHeight = 10f;
+    [Header("Main Rewards")]
+    [SerializeField] private float _hitReward = 2.0f;
+    [SerializeField] private float _gotHitPenalty = -2.0f;
+    [SerializeField] private float _timePenalty = -0.0015f;
 
-    [Header("Reward Settings")]
-    [SerializeField] private float _hitReward = 2.0f;           // Главная награда
-    [SerializeField] private float _gotHitPenalty = -2.0f;      // Главный штраф
-    [SerializeField] private float _goodBlockReward = 0.15f;    // Малая награда за защиту
-    [SerializeField] private float _badAttackPenalty = -0.1f;   // Малый штраф за плохую атаку
-    [SerializeField] private float _handleHitReward = 0.1f;     // Награда за попадание по рукояти
-    [SerializeField] private float _handleHitPenalty = -0.3f;   // Штраф за удар рукоятью
-    [SerializeField] private float _timePenalty = -0.005f;      // Небольшой штраф за время
-    [SerializeField] private float _outOfBoundsPenalty = -0.5f;
+    [Header("Defense Rewards")]
+    [SerializeField] private float _dangerRadius = 2.4f;
+    [SerializeField] private float _defensePositionReward = 0.018f;
+    [SerializeField] private float _defenseMissPenalty = -0.018f;
+    [SerializeField] private float _threatPushedAwayReward = 0.04f;
 
-    [Header("Time Limit")]
+    [Header("Attack Timing Rewards")]
+    [SerializeField] private float _safeAttackProgressReward = 0.0025f;
+    [SerializeField] private float _badAttackWhileDangerPenalty = -0.025f;
+    [SerializeField] private float _badRaceAttackPenalty = -0.012f;
+
+    [Header("Anti-Pattern / Anti-Chaos Rewards")]
+    [SerializeField] private float _rotationUsePenalty = -0.0005f;
+    [SerializeField] private float _rotationSwitchPenalty = -0.003f;
+    [SerializeField] private float _sameActionRepeatPenalty = -0.002f;
+    [SerializeField] private int _sameActionRepeatLimit = 12;
+    [SerializeField] private float _wallProximityPenalty = -0.002f;
+
+    [Header("Episode")]
     [SerializeField] private float _maxEpisodeTime = 30f;
-    private float _episodeTimer;
+
+    [Header("Hit Detection")]
+    [SerializeField] private float _hitCooldown = 0.15f;
 
     [Header("Visual Feedback")]
     [SerializeField] private Renderer _swordRenderer;
@@ -56,75 +67,87 @@ public class MLSword : Agent
     public int HitsScored = 0;
     public int HitsReceived = 0;
 
-    private Vector3 _startPosition;
-    private Quaternion _startRotation;
-    private Coroutine _flashCoroutine;
-    private float _lastCollisionTime = 0f;
-    private float _collisionCooldown = 0.2f;
-    private SwordPhysics _enemySwordPhysics;
+    public System.Action OnHit;
+    public System.Action OnGotHit;
 
-    // События для GameManager
-    public System.Action OnHit;  // Когда этот меч попал по врагу
-    public System.Action OnGotHit; // Когда по этому мечу попали
+    private float _episodeTimer;
+    private float _lastHitTime;
+    private float _lastCollisionTime;
+    private readonly float _collisionCooldown = 0.12f;
+
+    private float _previousMyThreat;
+    private float _previousOpponentThreat;
+
+    private SwordMoveAction _lastMoveAction = SwordMoveAction.None;
+    private SwordRotateAction _lastRotateAction = SwordRotateAction.None;
+    private int _sameActionCounter = 0;
+
+    private Coroutine _flashCoroutine;
+
+    private bool IsKnockedBack
+    {
+        get
+        {
+            return _swordPhysics != null && _swordPhysics.IsKnockedBack();
+        }
+    }
 
     public override void Initialize()
     {
-        _rb = GetComponent<Rigidbody2D>();
-        _swordPhysics = GetComponent<SwordPhysics>();
+        if (_context == null) _context = GetComponent<SwordCombatContext>();
+        if (_executor == null) _executor = GetComponent<SwordActionExecutor>();
+        if (_swordPhysics == null) _swordPhysics = GetComponent<SwordPhysics>();
+        if (_rb == null) _rb = GetComponent<Rigidbody2D>();
         if (_swordRenderer == null) _swordRenderer = GetComponent<Renderer>();
-
-        // Настройка физики для плавного вращения
-        if (_rb != null)
-        {
-            _rb.angularDamping = _angularDrag;
-        }
-
-        _startPosition = transform.position;
-        _startRotation = transform.rotation;
 
         CurrentEpisode = 0;
         CumulativeReward = 0f;
         HitsScored = 0;
         HitsReceived = 0;
-
-        Debug.Log($"✅ {gameObject.name} initialized");
-    }
-
-    void Start()
-    {
-        if (_enemySword != null)
-        {
-            _enemySwordPhysics = _enemySword.GetComponent<SwordPhysics>();
-        }
     }
 
     public override void OnEpisodeBegin()
     {
         CurrentEpisode++;
         CumulativeReward = 0f;
+
         _episodeTimer = _maxEpisodeTime;
+        _lastHitTime = 0f;
+        _lastCollisionTime = 0f;
 
-        if (_swordRenderer != null) _swordRenderer.material.color = _defaultColor;
+        _lastMoveAction = SwordMoveAction.None;
+        _lastRotateAction = SwordRotateAction.None;
+        _sameActionCounter = 0;
 
-        ResetPositions();
+        ResetTransformAndPhysics();
+
+        if (_executor != null)
+            _executor.ResetExecutor();
+
+        if (_swordRenderer != null)
+            _swordRenderer.material.color = _defaultColor;
+
+        CacheThreatDistances();
     }
 
-    private void ResetPositions()
+    private void ResetTransformAndPhysics()
     {
-        // Случайное смещение для robust обучения (ключевой момент из статьи!)
+        Vector3 basePosition = _mySpawnPoint != null ? _mySpawnPoint.position : transform.position;
+
         float randomX = Random.Range(-_spawnRandomOffset, _spawnRandomOffset);
         float randomY = Random.Range(-_spawnRandomOffset, _spawnRandomOffset);
 
-        if (_mySpawnPoint != null)
+        transform.position = basePosition + new Vector3(randomX, randomY, 0f);
+
+        if (_randomizeRotation)
         {
-            transform.position = _mySpawnPoint.position + new Vector3(randomX, randomY, 0);
+            float randomZ = Random.Range(0f, 360f);
+            transform.rotation = Quaternion.Euler(0f, 0f, randomZ);
         }
         else
         {
-            transform.position = _startPosition + new Vector3(randomX, randomY, 0);
+            transform.rotation = Quaternion.identity;
         }
-
-        transform.rotation = Quaternion.identity;
 
         if (_rb != null)
         {
@@ -133,346 +156,506 @@ public class MLSword : Agent
         }
     }
 
-    private IEnumerator FlashSword(Color targetColor, float duration)
+    private void CacheThreatDistances()
     {
-        if (_swordRenderer == null) yield break;
-
-        float elapsedTime = 0f;
-        Color originalColor = _swordRenderer.material.color;
-        _swordRenderer.material.color = targetColor;
-
-        while (elapsedTime < duration)
+        if (_context == null)
         {
-            elapsedTime += Time.deltaTime;
-            _swordRenderer.material.color = Color.Lerp(targetColor, _defaultColor, elapsedTime / duration);
-            yield return null;
+            _previousMyThreat = 0f;
+            _previousOpponentThreat = 0f;
+            return;
         }
+
+        _previousMyThreat = _context.MyThreatDistance;
+        _previousOpponentThreat = _context.OpponentThreatDistance;
     }
 
     public override void CollectObservations(VectorSensor sensor)
     {
-        if (_enemyCharacter == null || _enemySword == null) return;
-
-        // Получаем локальные координаты
-        Vector3 myPos = _arenaCenter != null ? transform.position - _arenaCenter.position : transform.position;
-        Vector3 enemyCharPos = _arenaCenter != null ? _enemyCharacter.position - _arenaCenter.position : _enemyCharacter.position;
-        Vector3 enemySwordPos = _arenaCenter != null ? _enemySword.position - _arenaCenter.position : _enemySword.position;
-        Vector3 myCharPos = _myCharacter != null ? (_arenaCenter != null ? _myCharacter.position - _arenaCenter.position : _myCharacter.position) : Vector3.zero;
-
-        // 1. Относительная позиция цели
-        Vector3 relativeEnemyPos = enemyCharPos - myPos;
-        sensor.AddObservation(relativeEnemyPos.x / _arenaWidth);
-        sensor.AddObservation(relativeEnemyPos.y / _arenaHeight);
-
-        // 2. Относительная позиция меча противника
-        Vector3 relativeEnemySwordPos = enemySwordPos - myPos;
-        sensor.AddObservation(relativeEnemySwordPos.x / _arenaWidth);
-        sensor.AddObservation(relativeEnemySwordPos.y / _arenaHeight);
-
-        // 3. Относительная позиция моего персонажа
-        if (_myCharacter != null)
+        if (_context == null)
         {
-            Vector3 relativeMyPos = myCharPos - myPos;
-            sensor.AddObservation(relativeMyPos.x / _arenaWidth);
-            sensor.AddObservation(relativeMyPos.y / _arenaHeight);
-        }
-        else
-        {
-            sensor.AddObservation(0f);
-            sensor.AddObservation(0f);
+            for (int i = 0; i < 29; i++)
+                sensor.AddObservation(0f);
+
+            return;
         }
 
-        // 4. Углы мечей
-        sensor.AddObservation(_enemySword.eulerAngles.z / 360f);
-        sensor.AddObservation(transform.eulerAngles.z / 360f);
-
-        // 5. Скорости
-        if (_rb != null)
-        {
-            sensor.AddObservation(_rb.linearVelocity.x / 5f);
-            sensor.AddObservation(_rb.linearVelocity.y / 5f);
-            sensor.AddObservation(_rb.angularVelocity / 180f);
-        }
-        else
-        {
-            sensor.AddObservation(0f);
-            sensor.AddObservation(0f);
-            sensor.AddObservation(0f);
-        }
-
-        // 6. Расстояние до краев арены
-        float halfWidth = _arenaWidth / 2f;
-        float halfHeight = _arenaHeight / 2f;
-
-        sensor.AddObservation((myPos.x + halfWidth) / _arenaWidth);
-        sensor.AddObservation((halfWidth - myPos.x) / _arenaWidth);
-        sensor.AddObservation((myPos.y + halfHeight) / _arenaHeight);
-        sensor.AddObservation((halfHeight - myPos.y) / _arenaHeight);
-
-        // 7. Время эпизода
-        sensor.AddObservation(_episodeTimer / _maxEpisodeTime);
+        _context.AddObservationsTo(sensor);
     }
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        float moveX = Mathf.Clamp(actions.ContinuousActions[0], -1f, 1f);
-        float moveY = Mathf.Clamp(actions.ContinuousActions[1], -1f, 1f);
-        float rotate = Mathf.Clamp(actions.ContinuousActions[2], -1f, 1f);
+        if (_executor == null || _context == null)
+            return;
 
-        MoveAgent(moveX, moveY, rotate);
+        if (IsKnockedBack)
+        {
+            _executor.SetAction(new SwordAction(SwordMoveAction.None, SwordRotateAction.None));
+            return;
+        }
 
-        // Небольшой штраф за каждый шаг
-        AddReward(_timePenalty * Time.fixedDeltaTime);
+        int moveIndex = Mathf.Clamp(actions.DiscreteActions[0], 0, 8);
+        int rotateIndex = Mathf.Clamp(actions.DiscreteActions[1], 0, 2);
+
+        SwordMoveAction moveAction = (SwordMoveAction)moveIndex;
+        SwordRotateAction rotateAction = (SwordRotateAction)rotateIndex;
+
+        SwordAction action = new SwordAction(moveAction, rotateAction);
+        _executor.SetAction(action);
+
+        ApplyStepRewards(moveAction, rotateAction);
+        CheckCharacterHitByBladeOrTip();
+
         _episodeTimer -= Time.fixedDeltaTime;
 
-        if (_episodeTimer <= 0f)
+        if (!_useGameManagerMode && _episodeTimer <= 0f)
         {
             EndEpisode();
         }
 
-        CheckBounds();
         CumulativeReward = GetCumulativeReward();
     }
 
-    private void MoveAgent(float moveX, float moveY, float rotate)
+    private void ApplyStepRewards(SwordMoveAction moveAction, SwordRotateAction rotateAction)
     {
-        if (_rb == null) return;
+        AddReward(_timePenalty * Time.fixedDeltaTime);
 
-        // Движение
-        Vector2 moveForce = new Vector2(moveX, moveY).normalized * _maxMoveForce;
-        _rb.AddForce(moveForce, ForceMode2D.Force);
+        float currentMyThreat = _context.MyThreatDistance;
+        float currentOpponentThreat = _context.OpponentThreatDistance;
 
-        // Вращение с уменьшенной силой для плавности
-        float torque = rotate * _maxTorqueForce;
-        _rb.AddTorque(torque);
+        float myThreatProgress = _previousMyThreat - currentMyThreat;
+        float opponentThreatProgress = _previousOpponentThreat - currentOpponentThreat;
+        float opponentThreatChange = currentOpponentThreat - _previousOpponentThreat;
 
-        // Ограничение скорости
-        if (_rb.linearVelocity.magnitude > _maxMoveForce * 1.2f)
+        bool opponentClosingIn = opponentThreatProgress > 0.005f;
+
+        bool opponentIsAttacking =
+            currentOpponentThreat <= _dangerRadius &&
+            (_context.OpponentAimAtMyCharacterScore > 0.35f || opponentClosingIn);
+
+        bool mySwordBlocksThreat = IsMySwordBetweenOpponentTipAndMyCharacter();
+
+        if (opponentIsAttacking)
         {
-            _rb.linearVelocity = _rb.linearVelocity.normalized * _maxMoveForce * 1.2f;
+            if (mySwordBlocksThreat)
+            {
+                AddReward(_defensePositionReward);
+            }
+            else
+            {
+                AddReward(_defenseMissPenalty);
+            }
+
+            // Хорошая защита — не просто стоять, а реально увеличивать расстояние угрозы.
+            if (opponentThreatChange > 0.01f)
+            {
+                AddReward(_threatPushedAwayReward);
+            }
+
+            // Если противник атакует, а я сам просто пру в атаку без блока — плохо.
+            if (!mySwordBlocksThreat && myThreatProgress > 0.004f)
+            {
+                AddReward(_badAttackWhileDangerPenalty);
+            }
+        }
+        else
+        {
+            // Атаку поощряем только когда нет явной срочной угрозы.
+            if (myThreatProgress > 0.005f)
+            {
+                AddReward(_safeAttackProgressReward);
+            }
         }
 
-        if (Mathf.Abs(_rb.angularVelocity) > _maxTorqueForce)
+        // Если я проигрываю "гонку угроз", но всё равно атакую без блока — плохо.
+        if (_context.ThreatAdvantage < -0.2f && myThreatProgress > 0.004f && !mySwordBlocksThreat)
         {
-            _rb.angularVelocity = Mathf.Sign(_rb.angularVelocity) * _maxTorqueForce;
+            AddReward(_badRaceAttackPenalty);
         }
+
+        // Антихаос вращения.
+        if (rotateAction != SwordRotateAction.None)
+        {
+            AddReward(_rotationUsePenalty);
+        }
+
+        if (IsOppositeRotation(_lastRotateAction, rotateAction))
+        {
+            AddReward(_rotationSwitchPenalty);
+        }
+
+        // Мягкий штраф за слишком долгое повторение одного и того же действия.
+        if (moveAction == _lastMoveAction && rotateAction == _lastRotateAction)
+        {
+            _sameActionCounter++;
+        }
+        else
+        {
+            _sameActionCounter = 0;
+        }
+
+        if (_sameActionCounter >= _sameActionRepeatLimit)
+        {
+            AddReward(_sameActionRepeatPenalty);
+        }
+
+        if (_context.IsNearArenaEdge(_context.MySwordPos, 0.45f))
+        {
+            AddReward(_wallProximityPenalty);
+        }
+
+        _lastMoveAction = moveAction;
+        _lastRotateAction = rotateAction;
+
+        _previousMyThreat = currentMyThreat;
+        _previousOpponentThreat = currentOpponentThreat;
     }
 
-    private void CheckBounds()
+    private bool IsMySwordBetweenOpponentTipAndMyCharacter()
     {
-        Vector3 pos = _arenaCenter != null ? transform.position - _arenaCenter.position : transform.position;
+        Vector2 dangerStart = _context.OpponentTipPos;
+        Vector2 dangerEnd = _context.MyCharacterPos;
 
-        if (Mathf.Abs(pos.x) > _arenaWidth / 2f || Mathf.Abs(pos.y) > _arenaHeight / 2f)
+        Vector2 myHandle = _context.MyHandlePos;
+        Vector2 myTip = _context.MyTipPos;
+
+        Vector2 dangerLine = dangerEnd - dangerStart;
+
+        if (dangerLine.sqrMagnitude < 0.0001f)
+            return false;
+
+        float bestDistance = float.MaxValue;
+        bool hasPointBetween = false;
+
+        const int samples = 5;
+
+        for (int i = 0; i < samples; i++)
         {
-            AddReward(_outOfBoundsPenalty);
-            EndEpisode();
+            float tSword = i / (float)(samples - 1);
+            Vector2 swordPoint = Vector2.Lerp(myHandle, myTip, tSword);
+
+            float tDanger = Vector2.Dot(swordPoint - dangerStart, dangerLine) / dangerLine.sqrMagnitude;
+            tDanger = Mathf.Clamp01(tDanger);
+
+            Vector2 closestOnDangerLine = dangerStart + dangerLine * tDanger;
+            float distance = Vector2.Distance(swordPoint, closestOnDangerLine);
+
+            if (distance < bestDistance)
+                bestDistance = distance;
+
+            if (tDanger > 0.12f && tDanger < 0.95f)
+                hasPointBetween = true;
         }
+
+        return hasPointBetween && bestDistance < 0.75f;
+    }
+
+    private bool IsOppositeRotation(SwordRotateAction previous, SwordRotateAction current)
+    {
+        return
+            (previous == SwordRotateAction.Clockwise && current == SwordRotateAction.CounterClockwise) ||
+            (previous == SwordRotateAction.CounterClockwise && current == SwordRotateAction.Clockwise);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Попадание по персонажу (ГЛАВНАЯ ЦЕЛЬ)
-        if ((gameObject.CompareTag("PlayerSword") && other.CompareTag("Enemy")) ||
-            (gameObject.CompareTag("EnemySword") && other.CompareTag("Player")))
+        TryRegisterCharacterHit(other);
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        TryRegisterCharacterHit(other);
+    }
+
+    private void TryRegisterCharacterHit(Collider2D other)
+    {
+        if (Time.time - _lastHitTime < _hitCooldown)
+            return;
+
+        if (!IsOpponentCharacterCollider(other))
+            return;
+
+        if (!IsBladeOrTipTouchingCollider(other))
+            return;
+
+        _lastHitTime = Time.time;
+        HitCharacter();
+    }
+
+    private void CheckCharacterHitByBladeOrTip()
+    {
+        if (Time.time - _lastHitTime < _hitCooldown)
+            return;
+
+        Collider2D[] opponentColliders = GetOpponentCharacterColliders();
+        if (opponentColliders == null || opponentColliders.Length == 0)
+            return;
+
+        foreach (Collider2D opponentCol in opponentColliders)
         {
-            HitCharacter();
+            if (opponentCol == null) continue;
+
+            if (IsBladeOrTipTouchingCollider(opponentCol))
+            {
+                _lastHitTime = Time.time;
+                HitCharacter();
+                return;
+            }
         }
+    }
+
+    private bool IsBladeOrTipTouchingCollider(Collider2D characterCollider)
+    {
+        Collider2D[] myColliders = GetComponentsInChildren<Collider2D>();
+
+        foreach (Collider2D myCol in myColliders)
+        {
+            if (myCol == null) continue;
+
+            bool isBladeOrTip =
+                myCol.CompareTag("BladeZone") ||
+                myCol.CompareTag("TipZone");
+
+            if (!isBladeOrTip)
+                continue;
+
+            if (myCol.IsTouching(characterCollider))
+                return true;
+        }
+
+        return false;
+    }
+
+    private Collider2D[] GetOpponentCharacterColliders()
+    {
+        if (_opponentCharacterRoot != null)
+            return _opponentCharacterRoot.GetComponentsInChildren<Collider2D>();
+
+        if (_context == null)
+            return null;
+
+        Collider2D[] hits = Physics2D.OverlapCircleAll(_context.OpponentCharacterPos, 1.5f);
+
+        int count = 0;
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (hits[i] != null && IsOpponentCharacterCollider(hits[i]))
+                count++;
+        }
+
+        Collider2D[] result = new Collider2D[count];
+        int index = 0;
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (hits[i] != null && IsOpponentCharacterCollider(hits[i]))
+            {
+                result[index] = hits[i];
+                index++;
+            }
+        }
+
+        return result;
+    }
+
+    private bool IsOpponentCharacterCollider(Collider2D col)
+    {
+        if (col == null)
+            return false;
+
+        if (gameObject.CompareTag("PlayerSword"))
+            return col.CompareTag("Enemy");
+
+        if (gameObject.CompareTag("EnemySword"))
+            return col.CompareTag("Player");
+
+        return col.CompareTag("Player") || col.CompareTag("Enemy");
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        // Столкновение с мечом
+        if (Time.time - _lastCollisionTime < _collisionCooldown)
+            return;
+
         if (collision.gameObject.CompareTag("PlayerSword") || collision.gameObject.CompareTag("EnemySword"))
         {
+            _lastCollisionTime = Time.time;
             HandleSwordCollision(collision);
+            return;
         }
 
-        // Столкновение со стеной
         if (collision.gameObject.CompareTag("Wall"))
         {
-            AddReward(_outOfBoundsPenalty * 0.1f);
+            AddReward(_wallProximityPenalty * 2f);
         }
-    }
-
-    private void HitCharacter()
-    {
-        //Для обучения
-        //AddReward(_hitReward);
-        //HitsScored++;
-
-        //if (_swordRenderer != null)
-        //{
-        //    if (_flashCoroutine != null) StopCoroutine(_flashCoroutine);
-        //    StartCoroutine(FlashSword(_hitColor, 0.8f));
-        //}
-
-        //// Сообщаем противнику
-        //MLSword enemyAgent = _enemySword?.GetComponent<MLSword>();
-        //if (enemyAgent != null)
-        //{
-        //    enemyAgent.GotHit();
-        //}
-
-        //CumulativeReward = GetCumulativeReward();
-
-        //// Завершаем эпизод
-        //EndEpisode();
-        //if (enemyAgent != null) enemyAgent.EndEpisode();
-
-
-
-        //Для тестирования
-        // Убираем награды и завершение эпизода (это теперь в GameManager)
-        HitsScored++;
-
-        if (_swordRenderer != null)
-        {
-            if (_flashCoroutine != null) StopCoroutine(_flashCoroutine);
-            StartCoroutine(FlashSword(_hitColor, 0.8f));
-        }
-
-        // Вызываем событие для GameManager
-        OnHit?.Invoke();
-
-        // Сообщаем противнику, что по нему попали
-        MLSword enemyAgent = _enemySword?.GetComponent<MLSword>();
-        if (enemyAgent != null)
-        {
-            enemyAgent.GotHit();
-        }
-
-        // НЕ вызываем EndEpisode() здесь!
-    }
-
-    public void GotHit()
-    {
-        //Для обучения
-        //AddReward(_gotHitPenalty);
-        //HitsReceived++;
-
-        //if (_swordRenderer != null)
-        //{
-        //    if (_flashCoroutine != null) StopCoroutine(_flashCoroutine);
-        //    StartCoroutine(FlashSword(_damageColor, 0.8f));
-        //}
-
-
-
-        //Для тестирования
-        HitsReceived++;
-
-        if (_swordRenderer != null)
-        {
-            if (_flashCoroutine != null) StopCoroutine(_flashCoroutine);
-            StartCoroutine(FlashSword(_damageColor, 0.8f));
-        }
-
-        // Вызываем событие для GameManager
-        OnGotHit?.Invoke();
-
-        // НЕ вызываем AddReward и EndEpisode()!
-    }
-
-    
-    public void ResetAgentState() //Для тестирования
-    {
-        // Сбрасываем внутреннее состояние агента без завершения эпизода
-        // Это нужно для GameManager при сбросе раунда
-
-        // Сбрасываем физику
-        if (_rb != null)
-        {
-            _rb.linearVelocity = Vector2.zero;
-            _rb.angularVelocity = 0f;
-        }
-
-        // Сбрасываем позицию (если не сброшена GameManager-ом)
-        // transform.position = _mySpawnPoint.position;
-        // transform.rotation = Quaternion.identity;
-
-        // Сбрасываем таймеры и флаги
-        _episodeTimer = _maxEpisodeTime;
-        _lastCollisionTime = 0f;
-
-        // Визуальный сброс
-        if (_swordRenderer != null)
-        {
-            _swordRenderer.material.color = _defaultColor;
-        }
-
-        Debug.Log($"{gameObject.name}: Agent state reset");
     }
 
     private void HandleSwordCollision(Collision2D collision)
     {
-        if (Time.time - _lastCollisionTime < _collisionCooldown) return;
-        _lastCollisionTime = Time.time;
+        if (_swordPhysics == null)
+            return;
 
-        if (_swordPhysics == null || _enemySwordPhysics == null) return;
+        SwordPhysics otherPhysics = collision.gameObject.GetComponent<SwordPhysics>();
+        if (otherPhysics == null || otherPhysics == _swordPhysics)
+            return;
 
         ContactPoint2D contact = collision.GetContact(0);
         Vector2 contactPoint = contact.point;
 
         string myPart = _swordPhysics.GetCollisionPartString(contactPoint);
-        string otherPart = _enemySwordPhysics.GetCollisionPartString(contactPoint);
+        string otherPart = otherPhysics.GetCollisionPartString(contactPoint);
 
         float reward = 0f;
         Color flashColor = _defaultColor;
 
-        // Малые награды за столкновения (не должны перевешивать главную цель!)
+        bool opponentDangerous = _context != null && _context.OpponentThreatDistance <= _dangerRadius;
+
         if (myPart == "Blade" && otherPart == "Tip")
         {
-            reward = _goodBlockReward;           // Успешная защита
+            reward = opponentDangerous ? 0.14f : 0.04f;
+            flashColor = _blockColor;
+        }
+        else if (myPart == "Blade" && otherPart == "Blade")
+        {
+            reward = opponentDangerous ? 0.09f : 0.02f;
             flashColor = _blockColor;
         }
         else if (myPart == "Tip" && otherPart == "Blade")
         {
-            reward = _badAttackPenalty;          // Неудачная атака
+            reward = -0.06f;
             flashColor = Color.yellow;
-        }
-        else if (otherPart == "Handle")
-        {
-            reward = _handleHitReward;           // Попал по рукояти
-            flashColor = Color.magenta;
         }
         else if (myPart == "Handle")
         {
-            reward = _handleHitPenalty;          // Удар рукоятью
+            reward = -0.12f;
             flashColor = Color.red;
         }
+        else if (otherPart == "Handle")
+        {
+            reward = 0.03f;
+            flashColor = Color.magenta;
+        }
 
-        if (reward != 0f)
+        if (Mathf.Abs(reward) > 0.0001f)
         {
             AddReward(reward);
-
-            if (_swordRenderer != null)
-            {
-                if (_flashCoroutine != null) StopCoroutine(_flashCoroutine);
-                StartCoroutine(FlashSword(flashColor, 0.15f));
-            }
+            FlashColor(flashColor, 0.15f);
         }
+    }
+
+    private void HitCharacter()
+    {
+        HitsScored++;
+
+        AddReward(_hitReward);
+        FlashColor(_hitColor, 0.25f);
+
+        OnHit?.Invoke();
+
+        if (_opponentAgent != null)
+        {
+            _opponentAgent.GotHit();
+        }
+
+        CumulativeReward = GetCumulativeReward();
+
+        if (!_useGameManagerMode)
+        {
+            EndEpisode();
+
+            if (_opponentAgent != null)
+                _opponentAgent.EndEpisode();
+        }
+    }
+
+    public void GotHit()
+    {
+        HitsReceived++;
+
+        AddReward(_gotHitPenalty);
+        FlashColor(_damageColor, 0.25f);
+
+        OnGotHit?.Invoke();
+
+        CumulativeReward = GetCumulativeReward();
+
+        if (!_useGameManagerMode)
+        {
+            EndEpisode();
+        }
+    }
+
+    public void ResetAgentState()
+    {
+        _episodeTimer = _maxEpisodeTime;
+        _lastHitTime = 0f;
+        _lastCollisionTime = 0f;
+        _sameActionCounter = 0;
+        _lastMoveAction = SwordMoveAction.None;
+        _lastRotateAction = SwordRotateAction.None;
+
+        if (_rb != null)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            _rb.angularVelocity = 0f;
+        }
+
+        if (_executor != null)
+            _executor.ResetExecutor();
+
+        if (_swordRenderer != null)
+            _swordRenderer.material.color = _defaultColor;
+
+        CacheThreatDistances();
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
     {
-        var continuousActions = actionsOut.ContinuousActions;
+        ActionSegment<int> discreteActions = actionsOut.DiscreteActions;
 
-        float moveX = 0f;
-        float moveY = 0f;
+        int move = 0;
+        int rotate = 0;
 
-        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) moveY += 1f;
-        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) moveY -= 1f;
-        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) moveX += 1f;
-        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) moveX -= 1f;
+        bool up = Input.GetKey(KeyCode.W);
+        bool down = Input.GetKey(KeyCode.S);
+        bool left = Input.GetKey(KeyCode.A);
+        bool right = Input.GetKey(KeyCode.D);
 
-        Vector2 moveDirection = new Vector2(moveX, moveY).normalized;
-        continuousActions[0] = moveDirection.x;
-        continuousActions[1] = moveDirection.y;
+        if (up && right) move = (int)SwordMoveAction.UpRight;
+        else if (up && left) move = (int)SwordMoveAction.UpLeft;
+        else if (down && right) move = (int)SwordMoveAction.DownRight;
+        else if (down && left) move = (int)SwordMoveAction.DownLeft;
+        else if (up) move = (int)SwordMoveAction.Up;
+        else if (down) move = (int)SwordMoveAction.Down;
+        else if (right) move = (int)SwordMoveAction.Right;
+        else if (left) move = (int)SwordMoveAction.Left;
 
-        float rotate = 0f;
-        if (Input.GetKey(KeyCode.E) || Input.GetKey(KeyCode.RightArrow)) rotate = 1f;
-        else if (Input.GetKey(KeyCode.Q) || Input.GetKey(KeyCode.LeftArrow)) rotate = -1f;
+        if (Input.GetKey(KeyCode.LeftArrow))
+            rotate = (int)SwordRotateAction.CounterClockwise;
+        else if (Input.GetKey(KeyCode.RightArrow))
+            rotate = (int)SwordRotateAction.Clockwise;
 
-        continuousActions[2] = rotate;
+        discreteActions[0] = move;
+        discreteActions[1] = rotate;
+    }
+
+    private void FlashColor(Color color, float duration)
+    {
+        if (_swordRenderer == null)
+            return;
+
+        if (_flashCoroutine != null)
+            StopCoroutine(_flashCoroutine);
+
+        _flashCoroutine = StartCoroutine(FlashRoutine(color, duration));
+    }
+
+    private IEnumerator FlashRoutine(Color color, float duration)
+    {
+        Color original = _swordRenderer.material.color;
+        _swordRenderer.material.color = color;
+
+        yield return new WaitForSeconds(duration);
+
+        _swordRenderer.material.color = original;
     }
 }

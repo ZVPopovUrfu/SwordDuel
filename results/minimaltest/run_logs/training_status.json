@@ -1,0 +1,30 @@
+{
+    "FencingSword": {
+        "elo": 1186.5301463157498,
+        "checkpoints": [
+            {
+                "steps": 18592,
+                "file_path": "results\\minimaltest\\FencingSword\\FencingSword-18592.onnx",
+                "reward": -0.5427570234585021,
+                "creation_time": 1775917184.0127969,
+                "auxillary_file_paths": [
+                    "results\\minimaltest\\FencingSword\\FencingSword-18592.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 18592,
+            "file_path": "results\\minimaltest\\FencingSword.onnx",
+            "reward": -0.5427570234585021,
+            "creation_time": 1775917184.0127969,
+            "auxillary_file_paths": [
+                "results\\minimaltest\\FencingSword\\FencingSword-18592.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.0.1+cpu"
+    }
+}

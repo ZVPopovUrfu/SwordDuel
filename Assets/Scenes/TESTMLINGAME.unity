@@ -119,12 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!4 &49537720 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 97727819769254556, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
-  m_PrefabAsset: {fileID: 0}
---- !u!1001 &97685980
+--- !u!1001 &341406892
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -132,21 +127,33 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1514460864956882758, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 5022602860645237092, guid: 1029d55e67d20a14e80d79e9b7d5acab, type: 3}
+      objectReference: {fileID: 0}
+    - target: {fileID: 1514460864956882758, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1514460864956882758, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_BehaviorType
-      value: 2
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1560213448876880442, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-      propertyPath: _swordRenderer
-      value: 
-      objectReference: {fileID: 1395555988}
+      propertyPath: _useGameManagerMode
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2931036257742064097, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_Name
       value: Environment
+      objectReference: {fileID: 0}
+    - target: {fileID: 4355280444893638245, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5249632800842332981, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -188,10 +195,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5868145130312610994, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7329792582267232318, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7526755741252031268, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 5022602860645237092, guid: 1029d55e67d20a14e80d79e9b7d5acab, type: 3}
+      objectReference: {fileID: 5022602860645237092, guid: 39b5a4e9b7acf4f41be25cd516484cf5, type: 3}
     - target: {fileID: 7526755741252031268, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_BehaviorType
       value: 2
@@ -205,7 +220,7 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 6773386530679227431, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1618445034}
+      addedObject: {fileID: 1219705222}
   m_SourcePrefab: {fileID: 100100000, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
 --- !u!1 &396966933
 GameObject:
@@ -239,7 +254,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cacd52171c58cbb4595049acbb40d4fd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArenaCameraController
-  swordTarget: {fileID: 1618445033}
+  swordTarget: {fileID: 0}
   smoothSpeed: 5
   arenaWidth: 20
 --- !u!114 &396966935
@@ -389,7 +404,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5745fcc03c7bf2845911cc71419cb72c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GUI_SwordAgent
-  _swordAgent: {fileID: 1395555982}
+  _swordAgent: {fileID: 0}
 --- !u!4 &541342099
 Transform:
   m_ObjectHideFlags: 0
@@ -434,12 +449,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 298f656eb71c26b47ac55456af7774e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NewGameManager
-  _playerSword: {fileID: 1618445033}
-  _enemySword: {fileID: 1395555980}
-  _playerSpawnPoint: {fileID: 49537720}
-  _enemySpawnPoint: {fileID: 1068562086}
-  _playerCharacter: {fileID: 1987536968}
-  _enemyCharacter: {fileID: 1352787186}
+  _playerSword: {fileID: 1219705217}
+  _enemySword: {fileID: 754560406}
+  _playerSpawnPoint: {fileID: 1294037062}
+  _enemySpawnPoint: {fileID: 769594262}
+  _playerCharacter: {fileID: 1187331304}
+  _enemyCharacter: {fileID: 1317181883}
   _resetDelay: 0.5
   _playerScore: 0
   _enemyScore: 0
@@ -462,6 +477,16 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &754560406 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5044603387296857725, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+  m_PrefabInstance: {fileID: 341406892}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &769594262 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5096122840388166390, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+  m_PrefabInstance: {fileID: 341406892}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &796029180
 GameObject:
   m_ObjectHideFlags: 0
@@ -785,11 +810,39 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &1068562086 stripped
+--- !u!4 &1187331304 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 5096122840388166390, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
+  m_CorrespondingSourceObject: {fileID: 4710519803851858855, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+  m_PrefabInstance: {fileID: 341406892}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1219705212 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6773386530679227431, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+  m_PrefabInstance: {fileID: 341406892}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1219705217 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1413310498462414077, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+  m_PrefabInstance: {fileID: 341406892}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1219705222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1219705212}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a92f235159b8aa4db93a39dbbc4ca6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSwordController
+  moveSpeed: 3
+  rotationSpeed: 150
+  acceleration: 8
+  deceleration: 12
+  playerInput: {fileID: 0}
+  _gameManager: {fileID: 681356390}
 --- !u!1 &1257736496
 GameObject:
   m_ObjectHideFlags: 0
@@ -869,31 +922,15 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &1352787186 stripped
+--- !u!4 &1294037062 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 97727819769254556, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+  m_PrefabInstance: {fileID: 341406892}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1317181883 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4657624986527500675, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1395555980 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 5044603387296857725, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1395555982 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1560213448876880442, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c6dad3aa14475d42a4b5278bdab2112, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MLSword
---- !u!212 &1395555988 stripped
-SpriteRenderer:
-  m_CorrespondingSourceObject: {fileID: 1766760579443969790, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
+  m_PrefabInstance: {fileID: 341406892}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1564872160
 GameObject:
@@ -1032,39 +1069,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1564872160}
   m_CullTransparentMesh: 1
---- !u!1 &1618445032 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6773386530679227431, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1618445033 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1413310498462414077, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1618445034
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1618445032}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a92f235159b8aa4db93a39dbbc4ca6c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerSwordController
-  moveSpeed: 7
-  rotationSpeed: 200
-  acceleration: 8
-  deceleration: 12
-  playerInput: {fileID: 0}
-  _gameManager: {fileID: 681356390}
---- !u!4 &1987536968 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4710519803851858855, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
-  m_PrefabInstance: {fileID: 97685980}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2052987317
 GameObject:
   m_ObjectHideFlags: 0
@@ -1150,6 +1154,6 @@ SceneRoots:
   - {fileID: 1257736499}
   - {fileID: 541342099}
   - {fileID: 905467821}
-  - {fileID: 97685980}
   - {fileID: 681356391}
   - {fileID: 837323161}
+  - {fileID: 341406892}

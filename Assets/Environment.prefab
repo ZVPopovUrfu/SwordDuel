@@ -456,6 +456,9 @@ GameObject:
   - component: {fileID: 1766760579443969790}
   - component: {fileID: 5178052225952184260}
   - component: {fileID: 8038420568549977567}
+  - component: {fileID: 1999038037256293734}
+  - component: {fileID: 2898146302316957571}
+  - component: {fileID: 6551789612343509081}
   - component: {fileID: 8711702861529068512}
   - component: {fileID: 7526755741252031268}
   - component: {fileID: 1560213448876880442}
@@ -617,6 +620,68 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.48447847, y: 9.037441}
   m_EdgeRadius: 0
+--- !u!114 &1999038037256293734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674155175607749860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3710e61c88df82b4ba61d7ecea77bb9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwordActionExecutor
+  _moveSpeed: 3
+  _rotationSpeed: 150
+  _acceleration: 20
+  _deceleration: 8
+  _arenaCenter: {fileID: 6335980079945932299}
+  _arenaWidth: 20
+  _arenaHeight: 10
+  _arenaPadding: 0.5
+  _clampToArena: 1
+  _rb: {fileID: 5178052225952184260}
+--- !u!114 &2898146302316957571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674155175607749860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa8af2e81ca4d8d45bd8840d54035fb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwordActionTypes
+--- !u!114 &6551789612343509081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674155175607749860}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6c002629a23f8a4f8ec86099b008a95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwordCombatContext
+  _mySword: {fileID: 5044603387296857725}
+  _myCharacter: {fileID: 4657624986527500675}
+  _myTipPoint: {fileID: 2764715732915107977}
+  _myHandlePoint: {fileID: 5831826803525337281}
+  _myRb: {fileID: 5178052225952184260}
+  _opponentSword: {fileID: 1413310498462414077}
+  _opponentCharacter: {fileID: 4710519803851858855}
+  _opponentTipPoint: {fileID: 5261584415766825308}
+  _opponentHandlePoint: {fileID: 8001405613598386848}
+  _opponentRb: {fileID: 6683989757389370320}
+  _opponentAttackPoint: {fileID: 4710519803851858855}
+  _fallbackAttackOffset: {x: 0, y: 1}
+  _arenaCenter: {fileID: 6335980079945932299}
+  _arenaWidth: 20
+  _arenaHeight: 10
+  _arenaPadding: 0.5
 --- !u!114 &8711702861529068512
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -652,12 +717,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Policies.BehaviorParameters
   m_BrainParameters:
-    VectorObservationSize: 16
+    VectorObservationSize: 29
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 01000000
-    VectorActionSize: 
+      m_NumContinuousActions: 0
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -686,30 +751,34 @@ MonoBehaviour:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
-  _arenaCenter: {fileID: 6335980079945932299}
-  _enemyCharacter: {fileID: 4710519803851858855}
-  _myCharacter: {fileID: 4657624986527500675}
-  _enemySword: {fileID: 1413310498462414077}
+  _context: {fileID: 6551789612343509081}
+  _executor: {fileID: 1999038037256293734}
   _swordPhysics: {fileID: 8711702861529068512}
   _rb: {fileID: 5178052225952184260}
+  _opponentAgent: {fileID: 5868145130312610994}
+  _opponentCharacterRoot: {fileID: 4710519803851858855}
   _mySpawnPoint: {fileID: 5096122840388166390}
-  _enemySpawnPoint: {fileID: 97727819769254556}
-  _spawnRandomOffset: 0.5
-  _maxMoveForce: 5
-  _maxTorqueForce: 180
-  _angularDrag: 3
-  _arenaWidth: 20
-  _arenaHeight: 10
+  _spawnRandomOffset: 1
+  _randomizeRotation: 1
+  _useGameManagerMode: 0
   _hitReward: 2
   _gotHitPenalty: -1.5
-  _goodBlockReward: 0.15
-  _badAttackPenalty: -0.1
-  _handleHitReward: 0.1
-  _handleHitPenalty: -0.3
   _timePenalty: -0.01
-  _outOfBoundsPenalty: -0.5
+  _dangerRadius: 2.2
+  _defensePositionReward: 0.004
+  _defenseMissPenalty: -0.004
+  _threatPushedAwayReward: 0.012
+  _safeAttackProgressReward: 0.004
+  _badAttackWhileDangerPenalty: -0.004
+  _badRaceAttackPenalty: -0.012
+  _rotationUsePenalty: -0.0005
+  _rotationSwitchPenalty: -0.003
+  _sameActionRepeatPenalty: -0.002
+  _sameActionRepeatLimit: 12
+  _wallProximityPenalty: -0.002
   _maxEpisodeTime: 30
-  _swordRenderer: {fileID: 0}
+  _hitCooldown: 0.15
+  _swordRenderer: {fileID: 1766760579443969790}
   _defaultColor: {r: 0, g: 0, b: 1, a: 1}
   _hitColor: {r: 0, g: 1, b: 0, a: 1}
   _damageColor: {r: 1, g: 0, b: 0, a: 1}
@@ -3003,9 +3072,12 @@ GameObject:
   - component: {fileID: 1481797815323428198}
   - component: {fileID: 6683989757389370320}
   - component: {fileID: 5255016733604981634}
+  - component: {fileID: 7329792582267232318}
+  - component: {fileID: 1692455498954807935}
+  - component: {fileID: 7562532398683899848}
+  - component: {fileID: 584144408312951828}
   - component: {fileID: 1514460864956882758}
   - component: {fileID: 5868145130312610994}
-  - component: {fileID: 584144408312951828}
   - component: {fileID: 4355280444893638245}
   m_Layer: 6
   m_Name: PlayerSword
@@ -3164,6 +3236,90 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.4979988, y: 8.98926}
   m_EdgeRadius: 0
+--- !u!114 &7329792582267232318
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6773386530679227431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3710e61c88df82b4ba61d7ecea77bb9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwordActionExecutor
+  _moveSpeed: 3
+  _rotationSpeed: 150
+  _acceleration: 20
+  _deceleration: 8
+  _arenaCenter: {fileID: 6335980079945932299}
+  _arenaWidth: 20
+  _arenaHeight: 10
+  _arenaPadding: 0.5
+  _clampToArena: 1
+  _rb: {fileID: 6683989757389370320}
+--- !u!114 &1692455498954807935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6773386530679227431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa8af2e81ca4d8d45bd8840d54035fb3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwordActionTypes
+--- !u!114 &7562532398683899848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6773386530679227431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6c002629a23f8a4f8ec86099b008a95, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwordCombatContext
+  _mySword: {fileID: 1413310498462414077}
+  _myCharacter: {fileID: 4710519803851858855}
+  _myTipPoint: {fileID: 5261584415766825308}
+  _myHandlePoint: {fileID: 8001405613598386848}
+  _myRb: {fileID: 6683989757389370320}
+  _opponentSword: {fileID: 5044603387296857725}
+  _opponentCharacter: {fileID: 4657624986527500675}
+  _opponentTipPoint: {fileID: 2764715732915107977}
+  _opponentHandlePoint: {fileID: 5831826803525337281}
+  _opponentRb: {fileID: 5178052225952184260}
+  _opponentAttackPoint: {fileID: 4657624986527500675}
+  _fallbackAttackOffset: {x: 0, y: 1}
+  _arenaCenter: {fileID: 6335980079945932299}
+  _arenaWidth: 20
+  _arenaHeight: 10
+  _arenaPadding: 0.5
+--- !u!114 &584144408312951828
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6773386530679227431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0b4749df9fa5e249b28c7b05486a794, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SwordPhysics
+  tipPoint: {fileID: 5261584415766825308}
+  handlePoint: {fileID: 8001405613598386848}
+  swordLength: 2
+  knockbackDistance: 1.5
+  knockbackDuration: 0.15
+  rotationKnockback: 60
+  strongKnockback: 1
+  weakKnockback: 0.3
+  noKnockback: 0
+  showDebugLogs: 0
 --- !u!114 &1514460864956882758
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3177,12 +3333,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Policies.BehaviorParameters
   m_BrainParameters:
-    VectorObservationSize: 16
+    VectorObservationSize: 29
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 3
-      BranchSizes: 01000000
-    VectorActionSize: 
+      m_NumContinuousActions: 0
+      BranchSizes: 0900000003000000
+    VectorActionSize: 0900000003000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
@@ -3211,30 +3367,34 @@ MonoBehaviour:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
-  _arenaCenter: {fileID: 6335980079945932299}
-  _enemyCharacter: {fileID: 4657624986527500675}
-  _myCharacter: {fileID: 4710519803851858855}
-  _enemySword: {fileID: 5044603387296857725}
+  _context: {fileID: 7562532398683899848}
+  _executor: {fileID: 7329792582267232318}
   _swordPhysics: {fileID: 584144408312951828}
   _rb: {fileID: 6683989757389370320}
+  _opponentAgent: {fileID: 1560213448876880442}
+  _opponentCharacterRoot: {fileID: 4657624986527500675}
   _mySpawnPoint: {fileID: 97727819769254556}
-  _enemySpawnPoint: {fileID: 5096122840388166390}
   _spawnRandomOffset: 0.5
-  _maxMoveForce: 5
-  _maxTorqueForce: 120
-  _angularDrag: 3
-  _arenaWidth: 20
-  _arenaHeight: 10
+  _randomizeRotation: 1
+  _useGameManagerMode: 0
   _hitReward: 2
   _gotHitPenalty: -1.5
-  _goodBlockReward: 0.15
-  _badAttackPenalty: -0.1
-  _handleHitReward: 0.1
-  _handleHitPenalty: -0.3
   _timePenalty: -0.01
-  _outOfBoundsPenalty: -0.5
+  _dangerRadius: 2.2
+  _defensePositionReward: 0.004
+  _defenseMissPenalty: -0.004
+  _threatPushedAwayReward: 0.012
+  _safeAttackProgressReward: 0.004
+  _badAttackWhileDangerPenalty: -0.004
+  _badRaceAttackPenalty: -0.012
+  _rotationUsePenalty: -0.0005
+  _rotationSwitchPenalty: -0.003
+  _sameActionRepeatPenalty: -0.002
+  _sameActionRepeatLimit: 12
+  _wallProximityPenalty: -0.002
   _maxEpisodeTime: 30
-  _swordRenderer: {fileID: 0}
+  _hitCooldown: 0.15
+  _swordRenderer: {fileID: 1481797815323428198}
   _defaultColor: {r: 0, g: 0, b: 1, a: 1}
   _hitColor: {r: 0, g: 1, b: 0, a: 1}
   _damageColor: {r: 1, g: 0, b: 0, a: 1}
@@ -3243,28 +3403,6 @@ MonoBehaviour:
   CumulativeReward: 0
   HitsScored: 0
   HitsReceived: 0
---- !u!114 &584144408312951828
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6773386530679227431}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a0b4749df9fa5e249b28c7b05486a794, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SwordPhysics
-  tipPoint: {fileID: 5261584415766825308}
-  handlePoint: {fileID: 8001405613598386848}
-  swordLength: 2
-  knockbackDistance: 1.5
-  knockbackDuration: 0.15
-  rotationKnockback: 60
-  strongKnockback: 1
-  weakKnockback: 0.3
-  noKnockback: 0
-  showDebugLogs: 0
 --- !u!114 &4355280444893638245
 MonoBehaviour:
   m_ObjectHideFlags: 0

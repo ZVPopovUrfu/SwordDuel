@@ -1,0 +1,66 @@
+{
+    "FencingSword": {
+        "checkpoints": [
+            {
+                "steps": 849960,
+                "file_path": "results\\minimaltest1\\FencingSword\\FencingSword-849960.onnx",
+                "reward": 0.6352001279592514,
+                "creation_time": 1776053506.0676837,
+                "auxillary_file_paths": [
+                    "results\\minimaltest1\\FencingSword\\FencingSword-849960.pt"
+                ]
+            },
+            {
+                "steps": 899892,
+                "file_path": "results\\minimaltest1\\FencingSword\\FencingSword-899892.onnx",
+                "reward": 0.17305718307782497,
+                "creation_time": 1776053595.8131657,
+                "auxillary_file_paths": [
+                    "results\\minimaltest1\\FencingSword\\FencingSword-899892.pt"
+                ]
+            },
+            {
+                "steps": 949956,
+                "file_path": "results\\minimaltest1\\FencingSword\\FencingSword-949956.onnx",
+                "reward": null,
+                "creation_time": 1776053695.2180116,
+                "auxillary_file_paths": [
+                    "results\\minimaltest1\\FencingSword\\FencingSword-949956.pt"
+                ]
+            },
+            {
+                "steps": 999968,
+                "file_path": "results\\minimaltest1\\FencingSword\\FencingSword-999968.onnx",
+                "reward": 0.5287715398839542,
+                "creation_time": 1776053781.3084211,
+                "auxillary_file_paths": [
+                    "results\\minimaltest1\\FencingSword\\FencingSword-999968.pt"
+                ]
+            },
+            {
+                "steps": 1000608,
+                "file_path": "results\\minimaltest1\\FencingSword\\FencingSword-1000608.onnx",
+                "reward": 0.5287715398839542,
+                "creation_time": 1776053781.4173398,
+                "auxillary_file_paths": [
+                    "results\\minimaltest1\\FencingSword\\FencingSword-1000608.pt"
+                ]
+            }
+        ],
+        "elo": 747.631713534816,
+        "final_checkpoint": {
+            "steps": 1000608,
+            "file_path": "results\\minimaltest1\\FencingSword.onnx",
+            "reward": 0.5287715398839542,
+            "creation_time": 1776053781.4173398,
+            "auxillary_file_paths": [
+                "results\\minimaltest1\\FencingSword\\FencingSword-1000608.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.0.1+cpu"
+    }
+}

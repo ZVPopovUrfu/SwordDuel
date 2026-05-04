@@ -131,6 +131,22 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: weakKnockback
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: strongKnockback
+      value: 1.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: knockbackDistance
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: rotationKnockback
+      value: 100
+      objectReference: {fileID: 0}
     - target: {fileID: 1514460864956882758, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_Model
       value: 
@@ -144,8 +160,16 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1560213448876880442, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: _opponentAgent
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1560213448876880442, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: _useGameManagerMode
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1560213448876880442, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: _useHalfArenaRandomSpawn
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2931036257742064097, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_Name
@@ -195,6 +219,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5361625065404476508, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: _randomizeRotation
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5361625065404476508, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: _useHalfArenaRandomSpawn
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5868145130312610994, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -206,10 +238,30 @@ PrefabInstance:
     - target: {fileID: 7526755741252031268, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_Model
       value: 
-      objectReference: {fileID: 5022602860645237092, guid: 39b5a4e9b7acf4f41be25cd516484cf5, type: 3}
+      objectReference: {fileID: 5022602860645237092, guid: 52ff045a1f054b64db1b73796f11aada, type: 3}
     - target: {fileID: 7526755741252031268, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_BehaviorType
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: showDebugLogs
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: weakKnockback
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: strongKnockback
+      value: 1.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: knockbackDistance
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: rotationKnockback
+      value: 100
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4355280444893638245, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
@@ -458,7 +510,7 @@ MonoBehaviour:
   _resetDelay: 0.5
   _playerScore: 0
   _enemyScore: 0
-  _winScore: 3
+  _winScore: 20
   _roundEndPanel: {fileID: 2052987317}
   _scoreText: {fileID: 796029182}
   _roundResultText: {fileID: 1564872162}

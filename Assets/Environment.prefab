@@ -461,8 +461,8 @@ GameObject:
   - component: {fileID: 6551789612343509081}
   - component: {fileID: 8711702861529068512}
   - component: {fileID: 7526755741252031268}
-  - component: {fileID: 1560213448876880442}
-  - component: {fileID: 4749895588646441845}
+  - component: {fileID: 5361625065404476508}
+  - component: {fileID: 4942317301758879205}
   m_Layer: 7
   m_Name: EnemySword
   m_TagString: EnemySword
@@ -697,11 +697,11 @@ MonoBehaviour:
   tipPoint: {fileID: 2764715732915107977}
   handlePoint: {fileID: 5831826803525337281}
   swordLength: 2
-  knockbackDistance: 1.5
+  knockbackDistance: 2.5
   knockbackDuration: 0.15
-  rotationKnockback: 60
-  strongKnockback: 1
-  weakKnockback: 0.3
+  rotationKnockback: 100
+  strongKnockback: 1.75
+  weakKnockback: 0.5
   noKnockback: 0
   showDebugLogs: 1
 --- !u!114 &7526755741252031268
@@ -735,7 +735,7 @@ MonoBehaviour:
   m_UseChildActuators: 1
   m_DeterministicInference: 0
   m_ObservableAttributeHandling: 0
---- !u!114 &1560213448876880442
+--- !u!114 &5361625065404476508
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -755,24 +755,53 @@ MonoBehaviour:
   _executor: {fileID: 1999038037256293734}
   _swordPhysics: {fileID: 8711702861529068512}
   _rb: {fileID: 5178052225952184260}
-  _opponentAgent: {fileID: 5868145130312610994}
+  _opponentAgent: {fileID: 6116655572207060486}
   _opponentCharacterRoot: {fileID: 4710519803851858855}
   _mySpawnPoint: {fileID: 5096122840388166390}
-  _spawnRandomOffset: 1
+  _spawnRandomOffset: 0.5
   _randomizeRotation: 1
+  _useHalfArenaRandomSpawn: 1
+  _isLeftTeam: 0
+  _arenaCenter: {fileID: 6335980079945932299}
+  _arenaWidth: 20
+  _arenaHeight: 10
+  _arenaPadding: 1
+  _spawnMinDistanceFromCenter: 0.8
   _useGameManagerMode: 0
-  _hitReward: 2
-  _gotHitPenalty: -1.5
-  _timePenalty: -0.01
-  _dangerRadius: 2.2
-  _defensePositionReward: 0.004
-  _defenseMissPenalty: -0.004
-  _threatPushedAwayReward: 0.012
-  _safeAttackProgressReward: 0.004
-  _badAttackWhileDangerPenalty: -0.004
-  _badRaceAttackPenalty: -0.012
-  _rotationUsePenalty: -0.0005
-  _rotationSwitchPenalty: -0.003
+  _hitReward: 3
+  _gotHitPenalty: -2
+  _timePenalty: -0.0015
+  _dangerRadius: 2.4
+  _defensePositionReward: 0.002
+  _defenseMissPenalty: -0.006
+  _threatPushedAwayReward: 0.01
+  _safeAttackProgressReward: 0.014
+  _badAttackWhileDangerPenalty: -0.006
+  _badRaceAttackPenalty: -0.002
+  _directAttackMoveReward: 0.01
+  _directAttackAimReward: 0.006
+  _idleTargetApproachReward: 0.025
+  _closeIdleAttackPenalty: -0.015
+  _closeIdleDistance: 1.6
+  _goodAimScore: 0.65
+  _counterAttackWindow: 1.5
+  _counterAttackProgressReward: 0.025
+  _counterAttackHitReward: 1
+  _passiveAfterDefensePenalty: -0.01
+  _safePassivityPenalty: -0.006
+  _safeNoThreatDistance: 2.6
+  _safePassiveTimePenalty: -0.004
+  _safePassiveGraceTime: 0.7
+  _initiativeDistance: 4
+  _initiativeProgressReward: 0.012
+  _idleOpponentAttackReward: 0.018
+  _idleOpponentPassivityPenalty: -0.008
+  _opponentIdleVelocityThreshold: 0.15
+  _finishingDistance: 1.2
+  _finishingProgressReward: 0.02
+  _closeButNotFinishingPenalty: -0.01
+  _rotationUsePenalty: -0.0002
+  _rotationSwitchPenalty: -0.002
   _sameActionRepeatPenalty: -0.002
   _sameActionRepeatLimit: 12
   _wallProximityPenalty: -0.002
@@ -787,7 +816,7 @@ MonoBehaviour:
   CumulativeReward: 0
   HitsScored: 0
   HitsReceived: 0
---- !u!114 &4749895588646441845
+--- !u!114 &4942317301758879205
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3077,8 +3106,8 @@ GameObject:
   - component: {fileID: 7562532398683899848}
   - component: {fileID: 584144408312951828}
   - component: {fileID: 1514460864956882758}
-  - component: {fileID: 5868145130312610994}
-  - component: {fileID: 4355280444893638245}
+  - component: {fileID: 6116655572207060486}
+  - component: {fileID: 4247735704812452424}
   m_Layer: 6
   m_Name: PlayerSword
   m_TagString: PlayerSword
@@ -3313,11 +3342,11 @@ MonoBehaviour:
   tipPoint: {fileID: 5261584415766825308}
   handlePoint: {fileID: 8001405613598386848}
   swordLength: 2
-  knockbackDistance: 1.5
+  knockbackDistance: 2.5
   knockbackDuration: 0.15
-  rotationKnockback: 60
-  strongKnockback: 1
-  weakKnockback: 0.3
+  rotationKnockback: 100
+  strongKnockback: 1.75
+  weakKnockback: 0.5
   noKnockback: 0
   showDebugLogs: 0
 --- !u!114 &1514460864956882758
@@ -3351,7 +3380,7 @@ MonoBehaviour:
   m_UseChildActuators: 1
   m_DeterministicInference: 0
   m_ObservableAttributeHandling: 0
---- !u!114 &5868145130312610994
+--- !u!114 &6116655572207060486
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3371,24 +3400,53 @@ MonoBehaviour:
   _executor: {fileID: 7329792582267232318}
   _swordPhysics: {fileID: 584144408312951828}
   _rb: {fileID: 6683989757389370320}
-  _opponentAgent: {fileID: 1560213448876880442}
+  _opponentAgent: {fileID: 5361625065404476508}
   _opponentCharacterRoot: {fileID: 4657624986527500675}
   _mySpawnPoint: {fileID: 97727819769254556}
   _spawnRandomOffset: 0.5
   _randomizeRotation: 1
+  _useHalfArenaRandomSpawn: 1
+  _isLeftTeam: 1
+  _arenaCenter: {fileID: 6335980079945932299}
+  _arenaWidth: 20
+  _arenaHeight: 10
+  _arenaPadding: 1
+  _spawnMinDistanceFromCenter: 0.8
   _useGameManagerMode: 0
-  _hitReward: 2
-  _gotHitPenalty: -1.5
-  _timePenalty: -0.01
-  _dangerRadius: 2.2
-  _defensePositionReward: 0.004
-  _defenseMissPenalty: -0.004
-  _threatPushedAwayReward: 0.012
-  _safeAttackProgressReward: 0.004
-  _badAttackWhileDangerPenalty: -0.004
-  _badRaceAttackPenalty: -0.012
-  _rotationUsePenalty: -0.0005
-  _rotationSwitchPenalty: -0.003
+  _hitReward: 3
+  _gotHitPenalty: -2
+  _timePenalty: -0.0015
+  _dangerRadius: 2.4
+  _defensePositionReward: 0.002
+  _defenseMissPenalty: -0.006
+  _threatPushedAwayReward: 0.01
+  _safeAttackProgressReward: 0.014
+  _badAttackWhileDangerPenalty: -0.006
+  _badRaceAttackPenalty: -0.002
+  _directAttackMoveReward: 0.01
+  _directAttackAimReward: 0.006
+  _idleTargetApproachReward: 0.025
+  _closeIdleAttackPenalty: -0.015
+  _closeIdleDistance: 1.6
+  _goodAimScore: 0.65
+  _counterAttackWindow: 1.5
+  _counterAttackProgressReward: 0.025
+  _counterAttackHitReward: 1
+  _passiveAfterDefensePenalty: -0.01
+  _safePassivityPenalty: -0.006
+  _safeNoThreatDistance: 2.6
+  _safePassiveTimePenalty: -0.004
+  _safePassiveGraceTime: 0.7
+  _initiativeDistance: 4
+  _initiativeProgressReward: 0.012
+  _idleOpponentAttackReward: 0.018
+  _idleOpponentPassivityPenalty: -0.008
+  _opponentIdleVelocityThreshold: 0.15
+  _finishingDistance: 1.2
+  _finishingProgressReward: 0.02
+  _closeButNotFinishingPenalty: -0.01
+  _rotationUsePenalty: -0.0002
+  _rotationSwitchPenalty: -0.002
   _sameActionRepeatPenalty: -0.002
   _sameActionRepeatLimit: 12
   _wallProximityPenalty: -0.002
@@ -3403,7 +3461,7 @@ MonoBehaviour:
   CumulativeReward: 0
   HitsScored: 0
   HitsReceived: 0
---- !u!114 &4355280444893638245
+--- !u!114 &4247735704812452424
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

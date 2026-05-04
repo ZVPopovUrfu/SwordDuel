@@ -349,12 +349,24 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: showDebugLogs
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: weakKnockback
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: strongKnockback
+      value: 1.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: knockbackDistance
-      value: 2.25
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 584144408312951828, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: rotationKnockback
-      value: 90
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 1514460864956882758, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: m_Model
@@ -469,12 +481,20 @@ PrefabInstance:
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: weakKnockback
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
+      propertyPath: strongKnockback
+      value: 1.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: knockbackDistance
-      value: 2.25
+      value: 2.5
       objectReference: {fileID: 0}
     - target: {fileID: 8711702861529068512, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
       propertyPath: rotationKnockback
-      value: 90
+      value: 100
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4355280444893638245, guid: 1c2e01e9b5e37374392da81d3767ed0a, type: 3}
@@ -1256,7 +1276,7 @@ MonoBehaviour:
   _recoverDuration: 0.25
   _moveDeadZone: 0.05
   _rotationDeadZone: 7
-  _useRootHitDetectionForTest: 1
+  _hitCooldown: 0.15
   _swordRenderer: {fileID: 1783679309}
   _defendColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   _pressureColor: {r: 1, g: 0.5, b: 0, a: 1}

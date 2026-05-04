@@ -1,0 +1,66 @@
+{
+    "FencingSword": {
+        "checkpoints": [
+            {
+                "steps": 2899954,
+                "file_path": "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-2899954.onnx",
+                "reward": 2.822027686333889,
+                "creation_time": 1777926648.4963868,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-2899954.pt"
+                ]
+            },
+            {
+                "steps": 2999994,
+                "file_path": "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-2999994.onnx",
+                "reward": 4.793556770453086,
+                "creation_time": 1777926787.8972049,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-2999994.pt"
+                ]
+            },
+            {
+                "steps": 3099966,
+                "file_path": "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-3099966.onnx",
+                "reward": 3.3248054626271153,
+                "creation_time": 1777926917.092639,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-3099966.pt"
+                ]
+            },
+            {
+                "steps": 3199941,
+                "file_path": "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-3199941.onnx",
+                "reward": 4.937064293892153,
+                "creation_time": 1777927056.6842086,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-3199941.pt"
+                ]
+            },
+            {
+                "steps": 3280508,
+                "file_path": "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-3280508.onnx",
+                "reward": -1.134249985218048,
+                "creation_time": 1777927168.9124708,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-3280508.pt"
+                ]
+            }
+        ],
+        "elo": 2091.70270318914,
+        "final_checkpoint": {
+            "steps": 3280508,
+            "file_path": "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword.onnx",
+            "reward": -1.134249985218048,
+            "creation_time": 1777927168.9124708,
+            "auxillary_file_paths": [
+                "results\\FencingSword_RandomSpawn_Initiative_01\\FencingSword\\FencingSword-3280508.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.0.1+cpu"
+    }
+}

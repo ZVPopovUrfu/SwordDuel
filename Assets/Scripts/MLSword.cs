@@ -22,29 +22,70 @@ public class MLSword : Agent
     [SerializeField] private float _spawnRandomOffset = 0.5f;
     [SerializeField] private bool _randomizeRotation = true;
 
+    [Header("Spawn Randomization")]
+    [SerializeField] private bool _useHalfArenaRandomSpawn = true;
+    [SerializeField] private bool _isLeftTeam = true;
+    [SerializeField] private Transform _arenaCenter;
+    [SerializeField] private float _arenaWidth = 20f;
+    [SerializeField] private float _arenaHeight = 10f;
+    [SerializeField] private float _arenaPadding = 1.0f;
+    [SerializeField] private float _spawnMinDistanceFromCenter = 0.8f;
+
     [Header("Mode")]
     [Tooltip("False для ML-сцены обучения. True для TESTMLINGAME, где счет и сброс делает NewGameManager.")]
     [SerializeField] private bool _useGameManagerMode = false;
 
     [Header("Main Rewards")]
-    [SerializeField] private float _hitReward = 2.0f;
+    [SerializeField] private float _hitReward = 3.0f;
     [SerializeField] private float _gotHitPenalty = -2.0f;
     [SerializeField] private float _timePenalty = -0.0015f;
 
     [Header("Defense Rewards")]
     [SerializeField] private float _dangerRadius = 2.4f;
-    [SerializeField] private float _defensePositionReward = 0.018f;
-    [SerializeField] private float _defenseMissPenalty = -0.018f;
-    [SerializeField] private float _threatPushedAwayReward = 0.04f;
+    [SerializeField] private float _defensePositionReward = 0.002f;
+    [SerializeField] private float _defenseMissPenalty = -0.006f;
+    [SerializeField] private float _threatPushedAwayReward = 0.010f;
 
     [Header("Attack Timing Rewards")]
-    [SerializeField] private float _safeAttackProgressReward = 0.0025f;
-    [SerializeField] private float _badAttackWhileDangerPenalty = -0.025f;
-    [SerializeField] private float _badRaceAttackPenalty = -0.012f;
+    [SerializeField] private float _safeAttackProgressReward = 0.014f;
+    [SerializeField] private float _badAttackWhileDangerPenalty = -0.006f;
+    [SerializeField] private float _badRaceAttackPenalty = -0.002f;
+
+    [Header("Direct Attack Rewards")]
+    [SerializeField] private float _directAttackMoveReward = 0.010f;
+    [SerializeField] private float _directAttackAimReward = 0.006f;
+    [SerializeField] private float _idleTargetApproachReward = 0.025f;
+    [SerializeField] private float _closeIdleAttackPenalty = -0.015f;
+    [SerializeField] private float _closeIdleDistance = 1.6f;
+    [SerializeField] private float _goodAimScore = 0.65f;
+
+    [Header("Counterattack Rewards")]
+    [SerializeField] private float _counterAttackWindow = 1.5f;
+    [SerializeField] private float _counterAttackProgressReward = 0.025f;
+    [SerializeField] private float _counterAttackHitReward = 1.0f;
+    [SerializeField] private float _passiveAfterDefensePenalty = -0.010f;
+
+    [Header("Passivity Rewards")]
+    [SerializeField] private float _safePassivityPenalty = -0.006f;
+    [SerializeField] private float _safeNoThreatDistance = 2.6f;
+    [SerializeField] private float _safePassiveTimePenalty = -0.004f;
+    [SerializeField] private float _safePassiveGraceTime = 0.7f;
+
+    [Header("Initiative Rewards")]
+    [SerializeField] private float _initiativeDistance = 4.0f;
+    [SerializeField] private float _initiativeProgressReward = 0.012f;
+    [SerializeField] private float _idleOpponentAttackReward = 0.018f;
+    [SerializeField] private float _idleOpponentPassivityPenalty = -0.008f;
+    [SerializeField] private float _opponentIdleVelocityThreshold = 0.15f;
+
+    [Header("Finishing Attack Rewards")]
+    [SerializeField] private float _finishingDistance = 1.2f;
+    [SerializeField] private float _finishingProgressReward = 0.020f;
+    [SerializeField] private float _closeButNotFinishingPenalty = -0.010f;
 
     [Header("Anti-Pattern / Anti-Chaos Rewards")]
-    [SerializeField] private float _rotationUsePenalty = -0.0005f;
-    [SerializeField] private float _rotationSwitchPenalty = -0.003f;
+    [SerializeField] private float _rotationUsePenalty = -0.0002f;
+    [SerializeField] private float _rotationSwitchPenalty = -0.002f;
     [SerializeField] private float _sameActionRepeatPenalty = -0.002f;
     [SerializeField] private int _sameActionRepeatLimit = 12;
     [SerializeField] private float _wallProximityPenalty = -0.002f;
@@ -77,6 +118,8 @@ public class MLSword : Agent
 
     private float _previousMyThreat;
     private float _previousOpponentThreat;
+    private float _lastSuccessfulDefenseTime = -999f;
+    private float _safePassiveTimer = 0f;
 
     private SwordMoveAction _lastMoveAction = SwordMoveAction.None;
     private SwordRotateAction _lastRotateAction = SwordRotateAction.None;
@@ -84,13 +127,7 @@ public class MLSword : Agent
 
     private Coroutine _flashCoroutine;
 
-    private bool IsKnockedBack
-    {
-        get
-        {
-            return _swordPhysics != null && _swordPhysics.IsKnockedBack();
-        }
-    }
+    private bool IsKnockedBack => _swordPhysics != null && _swordPhysics.IsKnockedBack();
 
     public override void Initialize()
     {
@@ -114,6 +151,8 @@ public class MLSword : Agent
         _episodeTimer = _maxEpisodeTime;
         _lastHitTime = 0f;
         _lastCollisionTime = 0f;
+        _lastSuccessfulDefenseTime = -999f;
+        _safePassiveTimer = 0f;
 
         _lastMoveAction = SwordMoveAction.None;
         _lastRotateAction = SwordRotateAction.None;
@@ -132,12 +171,19 @@ public class MLSword : Agent
 
     private void ResetTransformAndPhysics()
     {
-        Vector3 basePosition = _mySpawnPoint != null ? _mySpawnPoint.position : transform.position;
+        if (_useHalfArenaRandomSpawn)
+        {
+            transform.position = GetRandomSpawnInOwnHalf();
+        }
+        else
+        {
+            Vector3 basePosition = _mySpawnPoint != null ? _mySpawnPoint.position : transform.position;
 
-        float randomX = Random.Range(-_spawnRandomOffset, _spawnRandomOffset);
-        float randomY = Random.Range(-_spawnRandomOffset, _spawnRandomOffset);
+            float randomX = Random.Range(-_spawnRandomOffset, _spawnRandomOffset);
+            float randomY = Random.Range(-_spawnRandomOffset, _spawnRandomOffset);
 
-        transform.position = basePosition + new Vector3(randomX, randomY, 0f);
+            transform.position = basePosition + new Vector3(randomX, randomY, 0f);
+        }
 
         if (_randomizeRotation)
         {
@@ -154,6 +200,33 @@ public class MLSword : Agent
             _rb.linearVelocity = Vector2.zero;
             _rb.angularVelocity = 0f;
         }
+    }
+
+    private Vector3 GetRandomSpawnInOwnHalf()
+    {
+        Vector2 center = _arenaCenter != null ? (Vector2)_arenaCenter.position : Vector2.zero;
+
+        float halfW = _arenaWidth * 0.5f - _arenaPadding;
+        float halfH = _arenaHeight * 0.5f - _arenaPadding;
+
+        float xMin;
+        float xMax;
+
+        if (_isLeftTeam)
+        {
+            xMin = center.x - halfW;
+            xMax = center.x - _spawnMinDistanceFromCenter;
+        }
+        else
+        {
+            xMin = center.x + _spawnMinDistanceFromCenter;
+            xMax = center.x + halfW;
+        }
+
+        float x = Random.Range(xMin, xMax);
+        float y = Random.Range(center.y - halfH, center.y + halfH);
+
+        return new Vector3(x, y, transform.position.z);
     }
 
     private void CacheThreatDistances()
@@ -234,80 +307,197 @@ public class MLSword : Agent
 
         bool mySwordBlocksThreat = IsMySwordBetweenOpponentTipAndMyCharacter();
 
+        bool opponentPassive =
+            !opponentIsAttacking &&
+            currentOpponentThreat > _dangerRadius &&
+            _context.OpponentAimAtMyCharacterScore < 0.35f;
+
+        bool safeToAttack =
+            !opponentIsAttacking &&
+            _context.ThreatAdvantage > -0.15f;
+
+        Vector2 moveDir = MoveActionToDirection(moveAction);
+        Vector2 toTargetFromTip = _context.OpponentAttackTargetPos - _context.MyTipPos;
+
+        Vector2 attackDir = toTargetFromTip.sqrMagnitude > 0.0001f
+            ? toTargetFromTip.normalized
+            : Vector2.zero;
+
+        float moveTowardTargetScore = Vector2.Dot(moveDir, attackDir);
+
+        if (safeToAttack)
+        {
+            if (myThreatProgress > 0.004f)
+                AddReward(_idleTargetApproachReward);
+
+            if (_context.MyAimAtOpponentScore > _goodAimScore)
+                AddReward(_directAttackAimReward);
+
+            if (moveTowardTargetScore > 0.5f)
+                AddReward(_directAttackMoveReward);
+        }
+
+        if (opponentPassive && currentMyThreat <= _closeIdleDistance)
+        {
+            if (myThreatProgress <= 0.001f && currentMyThreat > 0.25f)
+                AddReward(_closeIdleAttackPenalty);
+        }
+
+        bool recentlyDefended = Time.time - _lastSuccessfulDefenseTime <= _counterAttackWindow;
+
+        bool opponentNoLongerDangerous =
+            !opponentIsAttacking &&
+            _context.OpponentThreatDistance > _dangerRadius;
+
+        if (recentlyDefended && opponentNoLongerDangerous)
+        {
+            if (myThreatProgress > 0.004f)
+                AddReward(_counterAttackProgressReward);
+            else
+                AddReward(_passiveAfterDefensePenalty);
+        }
+
         if (opponentIsAttacking)
         {
             if (mySwordBlocksThreat)
-            {
                 AddReward(_defensePositionReward);
-            }
             else
-            {
                 AddReward(_defenseMissPenalty);
-            }
 
-            // Хорошая защита — не просто стоять, а реально увеличивать расстояние угрозы.
             if (opponentThreatChange > 0.01f)
             {
                 AddReward(_threatPushedAwayReward);
+                _lastSuccessfulDefenseTime = Time.time;
             }
 
-            // Если противник атакует, а я сам просто пру в атаку без блока — плохо.
             if (!mySwordBlocksThreat && myThreatProgress > 0.004f)
-            {
                 AddReward(_badAttackWhileDangerPenalty);
-            }
         }
         else
         {
-            // Атаку поощряем только когда нет явной срочной угрозы.
             if (myThreatProgress > 0.005f)
-            {
                 AddReward(_safeAttackProgressReward);
-            }
         }
 
-        // Если я проигрываю "гонку угроз", но всё равно атакую без блока — плохо.
+        bool safeSituation =
+            !opponentIsAttacking &&
+            _context.OpponentThreatDistance > _safeNoThreatDistance &&
+            _context.ThreatAdvantage > -0.1f;
+
+        if (safeSituation && myThreatProgress <= 0.001f)
+            AddReward(_safePassivityPenalty);
+
+        bool safeButPassive =
+            !opponentIsAttacking &&
+            _context.OpponentThreatDistance > _safeNoThreatDistance &&
+            myThreatProgress <= 0.001f;
+
+        if (safeButPassive)
+        {
+            _safePassiveTimer += Time.fixedDeltaTime;
+
+            if (_safePassiveTimer > _safePassiveGraceTime)
+                AddReward(_safePassiveTimePenalty);
+        }
+        else
+        {
+            _safePassiveTimer = 0f;
+        }
+
+        bool opponentAppearsIdle =
+            _context.OpponentVelocity.magnitude < _opponentIdleVelocityThreshold &&
+            currentOpponentThreat > _dangerRadius &&
+            _context.OpponentAimAtMyCharacterScore < 0.35f;
+
+        bool iAmNotThreatened =
+            !opponentIsAttacking &&
+            currentOpponentThreat > _dangerRadius &&
+            _context.ThreatAdvantage > -0.1f;
+
+        bool iAmFarEnoughToNeedInitiative =
+            currentMyThreat > _initiativeDistance;
+
+        if (iAmNotThreatened && myThreatProgress > 0.005f)
+            AddReward(_initiativeProgressReward);
+
+        if (opponentAppearsIdle && myThreatProgress > 0.005f)
+            AddReward(_idleOpponentAttackReward);
+
+        if (opponentAppearsIdle && iAmFarEnoughToNeedInitiative && myThreatProgress <= 0.001f)
+            AddReward(_idleOpponentPassivityPenalty);
+
+        bool inFinishingRange =
+            currentMyThreat <= _finishingDistance &&
+            !opponentIsAttacking;
+
+        if (inFinishingRange && myThreatProgress > 0.003f)
+            AddReward(_finishingProgressReward);
+
+        if (inFinishingRange && myThreatProgress <= 0.0005f && currentMyThreat > 0.25f)
+            AddReward(_closeButNotFinishingPenalty);
+
         if (_context.ThreatAdvantage < -0.2f && myThreatProgress > 0.004f && !mySwordBlocksThreat)
-        {
             AddReward(_badRaceAttackPenalty);
-        }
 
-        // Антихаос вращения.
         if (rotateAction != SwordRotateAction.None)
-        {
             AddReward(_rotationUsePenalty);
-        }
 
         if (IsOppositeRotation(_lastRotateAction, rotateAction))
-        {
             AddReward(_rotationSwitchPenalty);
-        }
 
-        // Мягкий штраф за слишком долгое повторение одного и того же действия.
         if (moveAction == _lastMoveAction && rotateAction == _lastRotateAction)
-        {
             _sameActionCounter++;
-        }
         else
-        {
             _sameActionCounter = 0;
-        }
 
-        if (_sameActionCounter >= _sameActionRepeatLimit)
-        {
+        bool activelyAttackingSafely =
+            !opponentIsAttacking &&
+            myThreatProgress > 0.003f;
+
+        if (_sameActionCounter >= _sameActionRepeatLimit && !activelyAttackingSafely)
             AddReward(_sameActionRepeatPenalty);
-        }
 
         if (_context.IsNearArenaEdge(_context.MySwordPos, 0.45f))
-        {
             AddReward(_wallProximityPenalty);
-        }
 
         _lastMoveAction = moveAction;
         _lastRotateAction = rotateAction;
 
         _previousMyThreat = currentMyThreat;
         _previousOpponentThreat = currentOpponentThreat;
+    }
+
+    private Vector2 MoveActionToDirection(SwordMoveAction action)
+    {
+        switch (action)
+        {
+            case SwordMoveAction.Up:
+                return Vector2.up;
+
+            case SwordMoveAction.Down:
+                return Vector2.down;
+
+            case SwordMoveAction.Left:
+                return Vector2.left;
+
+            case SwordMoveAction.Right:
+                return Vector2.right;
+
+            case SwordMoveAction.UpLeft:
+                return new Vector2(-1f, 1f).normalized;
+
+            case SwordMoveAction.UpRight:
+                return new Vector2(1f, 1f).normalized;
+
+            case SwordMoveAction.DownLeft:
+                return new Vector2(-1f, -1f).normalized;
+
+            case SwordMoveAction.DownRight:
+                return new Vector2(1f, -1f).normalized;
+
+            default:
+                return Vector2.zero;
+        }
     }
 
     private bool IsMySwordBetweenOpponentTipAndMyCharacter()
@@ -387,6 +577,7 @@ public class MLSword : Agent
             return;
 
         Collider2D[] opponentColliders = GetOpponentCharacterColliders();
+
         if (opponentColliders == null || opponentColliders.Length == 0)
             return;
 
@@ -436,6 +627,7 @@ public class MLSword : Agent
         Collider2D[] hits = Physics2D.OverlapCircleAll(_context.OpponentCharacterPos, 1.5f);
 
         int count = 0;
+
         for (int i = 0; i < hits.Length; i++)
         {
             if (hits[i] != null && IsOpponentCharacterCollider(hits[i]))
@@ -495,6 +687,7 @@ public class MLSword : Agent
             return;
 
         SwordPhysics otherPhysics = collision.gameObject.GetComponent<SwordPhysics>();
+
         if (otherPhysics == null || otherPhysics == _swordPhysics)
             return;
 
@@ -507,17 +700,25 @@ public class MLSword : Agent
         float reward = 0f;
         Color flashColor = _defaultColor;
 
-        bool opponentDangerous = _context != null && _context.OpponentThreatDistance <= _dangerRadius;
+        bool opponentDangerous =
+            _context != null &&
+            _context.OpponentThreatDistance <= _dangerRadius;
 
         if (myPart == "Blade" && otherPart == "Tip")
         {
-            reward = opponentDangerous ? 0.14f : 0.04f;
+            reward = opponentDangerous ? 0.12f : 0.04f;
             flashColor = _blockColor;
+
+            if (opponentDangerous)
+                _lastSuccessfulDefenseTime = Time.time;
         }
         else if (myPart == "Blade" && otherPart == "Blade")
         {
-            reward = opponentDangerous ? 0.09f : 0.02f;
+            reward = opponentDangerous ? 0.08f : 0.02f;
             flashColor = _blockColor;
+
+            if (opponentDangerous)
+                _lastSuccessfulDefenseTime = Time.time;
         }
         else if (myPart == "Tip" && otherPart == "Blade")
         {
@@ -547,6 +748,12 @@ public class MLSword : Agent
         HitsScored++;
 
         AddReward(_hitReward);
+
+        if (Time.time - _lastSuccessfulDefenseTime <= _counterAttackWindow)
+        {
+            AddReward(_counterAttackHitReward);
+        }
+
         FlashColor(_hitColor, 0.25f);
 
         OnHit?.Invoke();
@@ -589,6 +796,9 @@ public class MLSword : Agent
         _episodeTimer = _maxEpisodeTime;
         _lastHitTime = 0f;
         _lastCollisionTime = 0f;
+        _lastSuccessfulDefenseTime = -999f;
+        _safePassiveTimer = 0f;
+
         _sameActionCounter = 0;
         _lastMoveAction = SwordMoveAction.None;
         _lastRotateAction = SwordRotateAction.None;

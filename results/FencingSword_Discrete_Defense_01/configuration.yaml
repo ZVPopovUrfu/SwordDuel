@@ -75,7 +75,7 @@ checkpoint_settings:
   run_id: FencingSword_Discrete_Defense_01
   initialize_from: null
   load_model: false
-  resume: false
+  resume: true
   force: false
   train_model: false
   inference: false

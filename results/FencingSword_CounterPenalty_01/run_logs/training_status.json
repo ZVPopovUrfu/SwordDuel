@@ -1,0 +1,30 @@
+{
+    "FencingSword": {
+        "elo": 1204.2023543411117,
+        "checkpoints": [
+            {
+                "steps": 38361,
+                "file_path": "results\\FencingSword_CounterPenalty_01\\FencingSword\\FencingSword-38361.onnx",
+                "reward": 9.44559295810177,
+                "creation_time": 1778109552.9965389,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_CounterPenalty_01\\FencingSword\\FencingSword-38361.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 38361,
+            "file_path": "results\\FencingSword_CounterPenalty_01\\FencingSword.onnx",
+            "reward": 9.44559295810177,
+            "creation_time": 1778109552.9965389,
+            "auxillary_file_paths": [
+                "results\\FencingSword_CounterPenalty_01\\FencingSword\\FencingSword-38361.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.0.1+cpu"
+    }
+}

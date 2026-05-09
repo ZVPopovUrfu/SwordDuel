@@ -1,0 +1,66 @@
+{
+    "FencingSword": {
+        "checkpoints": [
+            {
+                "steps": 2699997,
+                "file_path": "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-2699997.onnx",
+                "reward": 4.223769104052888,
+                "creation_time": 1778015016.4871738,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-2699997.pt"
+                ]
+            },
+            {
+                "steps": 2799753,
+                "file_path": "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-2799753.onnx",
+                "reward": 13.090403517087301,
+                "creation_time": 1778015147.3721304,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-2799753.pt"
+                ]
+            },
+            {
+                "steps": 2899760,
+                "file_path": "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-2899760.onnx",
+                "reward": 5.589430881725563,
+                "creation_time": 1778015272.3889766,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-2899760.pt"
+                ]
+            },
+            {
+                "steps": 2999907,
+                "file_path": "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-2999907.onnx",
+                "reward": 13.133013944876822,
+                "creation_time": 1778015433.0346882,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-2999907.pt"
+                ]
+            },
+            {
+                "steps": 3005827,
+                "file_path": "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-3005827.onnx",
+                "reward": 8.288175877183676,
+                "creation_time": 1778015441.913871,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-3005827.pt"
+                ]
+            }
+        ],
+        "elo": 2060.2000007228844,
+        "final_checkpoint": {
+            "steps": 3005827,
+            "file_path": "results\\FencingSword_SimpleThreatLogic_01\\FencingSword.onnx",
+            "reward": 8.288175877183676,
+            "creation_time": 1778015441.913871,
+            "auxillary_file_paths": [
+                "results\\FencingSword_SimpleThreatLogic_01\\FencingSword\\FencingSword-3005827.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.0.1+cpu"
+    }
+}

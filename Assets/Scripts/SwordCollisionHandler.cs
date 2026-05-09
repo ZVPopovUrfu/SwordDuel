@@ -17,10 +17,10 @@ public class SwordCollisionHandler : MonoBehaviour
 
         if (swordPhysics == null)
         {
-            Debug.LogError($"{gameObject.name}: SwordPhysics не найден!");
+            //Debug.LogError($"{gameObject.name}: SwordPhysics не найден!");
         }
 
-        Debug.Log($"{gameObject.name}: инициализирован, тег = {gameObject.tag}, родитель = {transform.parent?.name}");
+        //Debug.Log($"{gameObject.name}: инициализирован, тег = {gameObject.tag}, родитель = {transform.parent?.name}");
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -45,17 +45,17 @@ public class SwordCollisionHandler : MonoBehaviour
         // Проверяем, что это действительно зоны
         if (myZone != "HandleZone" && myZone != "BladeZone" && myZone != "TipZone")
         {
-            Debug.LogWarning($"{gameObject.name}: неизвестный тег зоны '{myZone}'");
+            //Debug.LogWarning($"{gameObject.name}: неизвестный тег зоны '{myZone}'");
             return;
         }
 
         if (otherZoneTag != "HandleZone" && otherZoneTag != "BladeZone" && otherZoneTag != "TipZone")
         {
-            Debug.LogWarning($"{otherZone.gameObject.name}: неизвестный тег зоны '{otherZoneTag}'");
+            //Debug.LogWarning($"{otherZone.gameObject.name}: неизвестный тег зоны '{otherZoneTag}'");
             return;
         }
 
-        Debug.Log($"🎯 {gameObject.name} ({myZone}) коснулся {otherZone.gameObject.name} ({otherZoneTag})");
+        //Debug.Log($"🎯 {gameObject.name} ({myZone}) коснулся {otherZone.gameObject.name} ({otherZoneTag})");
 
         lastCollisionTime = Time.time;
         isProcessingCollision = true;

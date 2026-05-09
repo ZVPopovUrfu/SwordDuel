@@ -6,10 +6,25 @@ public class FSMSword : MonoBehaviour
 {
     private enum EnemyState
     {
+        Opening,
         Defend,
-        Pressure,
+        ContactControl,
+        Breakthrough,
         Attack,
         Recover
+    }
+
+    private enum ContactMode
+    {
+        Defense,
+        AttackClear
+    }
+
+    private enum OpeningPlan
+    {
+        Straight,
+        Upper,
+        Lower
     }
 
     [Header("Core")]
@@ -24,24 +39,72 @@ public class FSMSword : MonoBehaviour
     [Header("State Decision")]
     [SerializeField] private float _dangerRadius = 2.2f;
     [SerializeField] private float _pressureRadius = 2.8f;
-    [SerializeField] private float _attackEnterAdvantage = 0.25f;
-    [SerializeField] private float _attackExitAdvantage = -0.10f;
+    [SerializeField] private float _attackEnterAdvantage = 0.10f;
+    [SerializeField] private float _attackExitAdvantage = -0.25f;
+    [SerializeField] private float _attackTieMargin = 0.08f;
+
+    [Header("Opening")]
+    [SerializeField] private bool _useOpeningVariation = true;
+
+    [Tooltip("—колько секунд FSM принудительно выполн€ет стартовый манЄвр.")]
+    [SerializeField] private float _openingDuration = 1.75f;
+
+    [Tooltip("ћинимальное врем€, в течение которого Opening не отмен€етс€ даже при близости мечей.")]
+    [SerializeField] private float _openingMinDuration = 0.45f;
+
+    [Tooltip("Ќасколько сильно верхний/нижний заход смещает цель.")]
+    [SerializeField] private float _openingSideOffset = 1.6f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float _openingStraightChance = 0f;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float _openingUpperChance = 0.5f;
+
+    [Tooltip("≈сли угроза ближе этого рассто€ни€ после минимального времени Opening, Opening досрочно отмен€етс€.")]
+    [SerializeField] private float _openingCancelDangerRadius = 1.4f;
+
+    [Tooltip("≈сли мечи слишком близко после минимального времени Opening, Opening досрочно отмен€етс€.")]
+    [SerializeField] private float _openingCancelSwordDistance = 1.1f;
+
+    [Header("Contact Control")]
+    [SerializeField] private bool _useContactControl = true;
+    [SerializeField] private float _contactControlRadius = 2.4f;
+    [SerializeField] private float _contactDangerRadius = 2.8f;
+
+    [Range(0.2f, 0.95f)]
+    [SerializeField] private float _bladeContactT = 0.62f;
+
+    [SerializeField] private float _handleTargetMaxDistance = 2.1f;
+    [SerializeField] private float _tipTargetMaxDistance = 2.6f;
+    [SerializeField] private float _contactStrikeThroughOffset = 0.22f;
+    [SerializeField] private float _attackClearSideOffset = 0.85f;
+    [SerializeField] private float _contactSuccessAttackWindow = 0.20f;
+    [SerializeField] private float _contactControlMaxDuration = 0.65f;
 
     [Header("Attack")]
     [SerializeField] private float _attackCommitTime = 0.35f;
-    [SerializeField] private float _attackMaxDuration = 1.6f;
+    [SerializeField] private float _attackMaxDuration = 1.8f;
     [SerializeField] private float _attackSuccessDistance = 0.25f;
     [SerializeField] private float _attackHandleDistance = 0.12f;
 
-    [Header("Defend / Pressure")]
+    [Header("Attack Obstacle Avoidance")]
+    [SerializeField] private float _attackLineBlockDistance = 0.75f;
+    [SerializeField] private float _attackFlankOffset = 0.75f;
+
+    [Header("Defend")]
     [SerializeField] private float _deflectContactT = 0.72f;
     [SerializeField] private float _deflectSideOffset = 0.35f;
     [SerializeField] private float _deflectBladeAngle = 65f;
-    [SerializeField] private float _pressureContactOffset = 0.65f;
-    [SerializeField] private float _pressureTowardPlayerWeight = 0.8f;
+
+    [Header("Breakthrough")]
+    [SerializeField] private float _breakthroughMaxDuration = 1.2f;
+    [SerializeField] private float _breakthroughContactT = 0.78f;
+    [SerializeField] private float _breakthroughSideOffset = 0.45f;
+    [SerializeField] private float _breakthroughTowardTargetWeight = 0.85f;
 
     [Header("Recover")]
-    [SerializeField] private float _recoverDuration = 0.25f;
+    [SerializeField] private float _recoverDuration = 0.20f;
 
     [Header("Discrete Action Tuning")]
     [SerializeField] private float _moveDeadZone = 0.03f;
@@ -52,17 +115,23 @@ public class FSMSword : MonoBehaviour
 
     [Header("Visual Feedback")]
     [SerializeField] private Renderer _swordRenderer;
+    [SerializeField] private Color _openingColor = new Color(0.35f, 1f, 0.35f);
     [SerializeField] private Color _defendColor = Color.yellow;
-    [SerializeField] private Color _pressureColor = new Color(1f, 0.5f, 0f);
+    [SerializeField] private Color _contactControlColor = new Color(0.1f, 0.8f, 1f);
+    [SerializeField] private Color _breakthroughColor = Color.cyan;
     [SerializeField] private Color _attackColor = Color.red;
     [SerializeField] private Color _recoverColor = Color.gray;
     [SerializeField] private Color _hitColor = Color.magenta;
 
-    private EnemyState _currentState = EnemyState.Defend;
+    private EnemyState _currentState = EnemyState.Opening;
+    private OpeningPlan _openingPlan = OpeningPlan.Straight;
+
     private float _stateTimer;
+    private float _roundStartTime;
     private float _attackStartTipDistance;
     private float _lastCollisionTime;
     private float _lastHitTime;
+    private float _lastSuccessfulContactTime = -999f;
 
     private readonly float _collisionCooldown = 0.12f;
     private Coroutine _flashCoroutine;
@@ -116,23 +185,102 @@ public class FSMSword : MonoBehaviour
         float opponentThreat = _context.OpponentThreatDistance;
         float advantage = _context.ThreatAdvantage;
 
-        float opponentTipToMyChar = opponentThreat;
-        float mySwordToOpponentSword = Vector2.Distance(_context.MySwordPos, _context.OpponentSwordPos);
+        float swordDistance = Vector2.Distance(_context.MySwordPos, _context.OpponentSwordPos);
+
+        bool canAttackByRace = myThreat <= opponentThreat + _attackTieMargin;
+        bool hasClearAttackAdvantage = advantage > _attackEnterAdvantage;
+        bool opponentDangerous = opponentThreat <= _dangerRadius;
+        bool swordsAreClose = swordDistance <= _pressureRadius;
+        bool recentlyWonContact = Time.time - _lastSuccessfulContactTime <= _contactSuccessAttackWindow;
+
+        bool attackLineBlocked = IsOpponentSwordBlockingAttackLine(out _);
+        bool shouldContactControl = ShouldEnterContactControl(
+            canAttackByRace,
+            hasClearAttackAdvantage,
+            opponentThreat,
+            swordDistance,
+            attackLineBlocked
+        );
 
         switch (_currentState)
         {
-            case EnemyState.Defend:
+            case EnemyState.Opening:
                 {
-                    bool opponentIsDangerous = opponentTipToMyChar <= _pressureRadius;
-                    bool swordsAreClose = mySwordToOpponentSword <= _pressureRadius;
-
-                    if (opponentIsDangerous || swordsAreClose)
+                    if (ShouldCancelOpening())
                     {
-                        SetState(EnemyState.Pressure);
+                        SetState(EnemyState.ContactControl);
                         return;
                     }
 
-                    if (advantage > _attackEnterAdvantage && opponentThreat > _dangerRadius)
+                    if (_stateTimer >= _openingDuration)
+                    {
+                        if (shouldContactControl)
+                            SetState(EnemyState.ContactControl);
+                        else
+                            BeginAttack();
+
+                        return;
+                    }
+
+                    break;
+                }
+
+            case EnemyState.Defend:
+                {
+                    if (recentlyWonContact)
+                    {
+                        BeginAttack();
+                        return;
+                    }
+
+                    if (shouldContactControl)
+                    {
+                        SetState(EnemyState.ContactControl);
+                        return;
+                    }
+
+                    if ((canAttackByRace || hasClearAttackAdvantage) && !opponentDangerous && !attackLineBlocked)
+                    {
+                        BeginAttack();
+                        return;
+                    }
+
+                    if (opponentThreat <= _pressureRadius || swordsAreClose)
+                    {
+                        SetState(EnemyState.ContactControl);
+                        return;
+                    }
+
+                    break;
+                }
+
+            case EnemyState.ContactControl:
+                {
+                    if (recentlyWonContact)
+                    {
+                        BeginAttack();
+                        return;
+                    }
+
+                    if (_stateTimer > _contactControlMaxDuration)
+                    {
+                        if (canAttackByRace || hasClearAttackAdvantage)
+                        {
+                            BeginAttack();
+                        }
+                        else if (opponentDangerous || swordsAreClose)
+                        {
+                            SetState(EnemyState.ContactControl);
+                        }
+                        else
+                        {
+                            SetState(EnemyState.Defend);
+                        }
+
+                        return;
+                    }
+
+                    if (!shouldContactControl && (canAttackByRace || hasClearAttackAdvantage) && !attackLineBlocked)
                     {
                         BeginAttack();
                         return;
@@ -141,20 +289,33 @@ public class FSMSword : MonoBehaviour
                     break;
                 }
 
-            case EnemyState.Pressure:
+            case EnemyState.Breakthrough:
                 {
-                    bool opponentStillDangerous = opponentThreat <= _dangerRadius;
-                    bool opponentSwordCloseToMe = opponentTipToMyChar <= _dangerRadius + 0.6f;
-
-                    if (!opponentStillDangerous && !opponentSwordCloseToMe && advantage > _attackEnterAdvantage)
+                    if (recentlyWonContact)
                     {
                         BeginAttack();
                         return;
                     }
 
-                    if (mySwordToOpponentSword > _pressureRadius + 1.2f)
+                    if (shouldContactControl)
                     {
-                        SetState(EnemyState.Defend);
+                        SetState(EnemyState.ContactControl);
+                        return;
+                    }
+
+                    if (canAttackByRace || hasClearAttackAdvantage)
+                    {
+                        BeginAttack();
+                        return;
+                    }
+
+                    if (_stateTimer > _breakthroughMaxDuration)
+                    {
+                        if (opponentDangerous || swordsAreClose)
+                            SetState(EnemyState.ContactControl);
+                        else
+                            BeginAttack();
+
                         return;
                     }
 
@@ -170,23 +331,44 @@ public class FSMSword : MonoBehaviour
 
                     bool reachedTarget = currentTipDistance <= _attackSuccessDistance;
                     bool attackTooLong = _stateTimer > _attackMaxDuration;
-                    bool opponentTooDangerous = opponentThreat <= _dangerRadius;
-                    bool lostAdvantage = advantage < _attackExitAdvantage;
+                    bool lostAdvantageHard = advantage < _attackExitAdvantage && !canAttackByRace && !recentlyWonContact;
 
                     bool nearWallAndNotClose =
                         _context.IsNearArenaEdge(_context.MySwordPos, 0.55f) &&
                         currentTipDistance > 0.45f;
 
                     if (reachedTarget)
+                        return;
+
+                    if (shouldContactControl && !recentlyWonContact)
                     {
-                        // ѕопадание должно засчитатьс€ через BladeZone/TipZone.
-                        // —осто€ние специально не мен€ем, чтобы trigger/stay успел сработать.
+                        SetState(EnemyState.ContactControl);
                         return;
                     }
 
-                    if (attackTooLong || opponentTooDangerous || lostAdvantage || nearWallAndNotClose)
+                    if (attackLineBlocked && swordDistance <= _pressureRadius)
                     {
-                        SetState(EnemyState.Recover);
+                        SetState(EnemyState.ContactControl);
+                        return;
+                    }
+
+                    if (attackTooLong)
+                    {
+                        if (swordsAreClose || attackLineBlocked)
+                            SetState(EnemyState.ContactControl);
+                        else
+                            SetState(EnemyState.Recover);
+
+                        return;
+                    }
+
+                    if (lostAdvantageHard || nearWallAndNotClose)
+                    {
+                        if (opponentDangerous || swordsAreClose)
+                            SetState(EnemyState.ContactControl);
+                        else
+                            SetState(EnemyState.Recover);
+
                         return;
                     }
 
@@ -197,8 +379,10 @@ public class FSMSword : MonoBehaviour
                 {
                     if (_stateTimer >= _recoverDuration)
                     {
-                        if (opponentThreat <= _pressureRadius || mySwordToOpponentSword <= _pressureRadius)
-                            SetState(EnemyState.Pressure);
+                        if (shouldContactControl)
+                            SetState(EnemyState.ContactControl);
+                        else if (opponentThreat <= _pressureRadius || swordsAreClose)
+                            SetState(EnemyState.ContactControl);
                         else
                             SetState(EnemyState.Defend);
 
@@ -210,15 +394,64 @@ public class FSMSword : MonoBehaviour
         }
     }
 
+    private bool ShouldCancelOpening()
+    {
+        if (_stateTimer < _openingMinDuration)
+            return false;
+
+        float opponentThreat = _context.OpponentThreatDistance;
+        float swordDistance = Vector2.Distance(_context.MySwordPos, _context.OpponentSwordPos);
+
+        bool opponentVeryDangerous = opponentThreat <= _openingCancelDangerRadius;
+        bool swordsVeryClose = swordDistance <= _openingCancelSwordDistance;
+
+        return opponentVeryDangerous || swordsVeryClose;
+    }
+
+    private bool ShouldEnterContactControl(
+        bool canAttackByRace,
+        bool hasClearAttackAdvantage,
+        float opponentThreat,
+        float swordDistance,
+        bool attackLineBlocked)
+    {
+        if (!_useContactControl)
+            return false;
+
+        bool closeToEnemySword = swordDistance <= _contactControlRadius;
+        bool opponentThreatening = opponentThreat <= _contactDangerRadius;
+        bool opponentCanRace = opponentThreat <= _context.MyThreatDistance + _attackTieMargin + 0.25f;
+
+        if (opponentThreatening)
+            return true;
+
+        if (attackLineBlocked)
+            return true;
+
+        if (closeToEnemySword && opponentCanRace)
+            return true;
+
+        if (closeToEnemySword && !hasClearAttackAdvantage)
+            return true;
+
+        return false;
+    }
+
     private SwordAction ChooseActionByState()
     {
         switch (_currentState)
         {
+            case EnemyState.Opening:
+                return ChooseOpeningAction();
+
             case EnemyState.Attack:
                 return ChooseAttackAction();
 
-            case EnemyState.Pressure:
-                return ChoosePressureAction();
+            case EnemyState.ContactControl:
+                return ChooseContactControlAction();
+
+            case EnemyState.Breakthrough:
+                return ChooseBreakthroughAction();
 
             case EnemyState.Recover:
                 return ChooseRecoverAction();
@@ -229,39 +462,229 @@ public class FSMSword : MonoBehaviour
         }
     }
 
+    private SwordAction ChooseOpeningAction()
+    {
+        Vector2 target = GetOpeningTarget();
+
+        Vector2 desiredSwordDir = SafeNormalize(target - _context.MyHandlePos, _context.MySwordDir);
+
+        Vector2 desiredHandlePos = target - desiredSwordDir * GetSwordLength();
+        desiredHandlePos = _context.ClampPointToArena(desiredHandlePos);
+
+        Vector2 moveToHandle = desiredHandlePos - _context.MySwordPos;
+        Vector2 moveToTarget = target - _context.MyTipPos;
+
+        Vector2 moveVector =
+            (SafeNormalize(moveToTarget, desiredSwordDir) * 0.75f +
+             SafeNormalize(moveToHandle, desiredSwordDir) * 0.25f).normalized;
+
+        SwordMoveAction move = DirectionToMoveAction(moveVector);
+        SwordRotateAction rotate = DirectionToRotateAction(desiredSwordDir);
+
+        return new SwordAction(move, rotate);
+    }
+
+    private SwordAction ChooseContactControlAction()
+    {
+        ContactMode mode = DetermineContactMode();
+
+        Vector2 desiredPushDir = mode == ContactMode.Defense
+            ? GetDefensePushDirection()
+            : GetAttackClearPushDirection();
+
+        Vector2 targetPoint;
+        float myContactT;
+        Vector2 desiredSwordDir;
+
+        ChooseBestContactTarget(mode, desiredPushDir, out targetPoint, out myContactT, out desiredSwordDir);
+
+        Vector2 strikeTarget = targetPoint + desiredPushDir * _contactStrikeThroughOffset;
+
+        Vector2 desiredHandlePos = strikeTarget - desiredSwordDir * (GetSwordLength() * myContactT);
+        desiredHandlePos = _context.ClampPointToArena(desiredHandlePos);
+
+        Vector2 moveVector = desiredHandlePos - _context.MySwordPos;
+
+        if (moveVector.magnitude < _moveDeadZone * 2f)
+        {
+            moveVector = strikeTarget - GetMyContactPoint(myContactT);
+        }
+
+        SwordMoveAction move = DirectionToMoveAction(moveVector);
+        SwordRotateAction rotate = DirectionToRotateAction(desiredSwordDir);
+
+        return new SwordAction(move, rotate);
+    }
+
+    private ContactMode DetermineContactMode()
+    {
+        bool opponentDangerous =
+            _context.OpponentThreatDistance <= _contactDangerRadius ||
+            _context.ThreatAdvantage < -_attackTieMargin;
+
+        if (opponentDangerous)
+            return ContactMode.Defense;
+
+        return ContactMode.AttackClear;
+    }
+
+    private Vector2 GetDefensePushDirection()
+    {
+        Vector2 pushDir = _context.OpponentSwordPos - _context.MyCharacterPos;
+
+        if (pushDir.sqrMagnitude < 0.0001f)
+            pushDir = _context.OpponentTipPos - _context.MyCharacterPos;
+
+        return SafeNormalize(pushDir, Vector2.right);
+    }
+
+    private Vector2 GetAttackClearPushDirection()
+    {
+        Vector2 attackLine = GetCurrentAttackTarget() - _context.MyTipPos;
+
+        if (attackLine.sqrMagnitude < 0.0001f)
+            attackLine = _context.OpponentCharacterPos - _context.MySwordPos;
+
+        attackLine = SafeNormalize(attackLine, _context.MySwordDir);
+
+        Vector2 sideA = new Vector2(-attackLine.y, attackLine.x);
+        Vector2 sideB = -sideA;
+
+        Vector2 opponentFromLine = _context.OpponentSwordPos - _context.MyTipPos;
+
+        float scoreA = Vector2.Dot(sideA, opponentFromLine);
+        float scoreB = Vector2.Dot(sideB, opponentFromLine);
+
+        Vector2 chosenSide = scoreA >= scoreB ? sideA : sideB;
+
+        return SafeNormalize(chosenSide * _attackClearSideOffset + attackLine * 0.15f, chosenSide);
+    }
+
+    private void ChooseBestContactTarget(
+        ContactMode mode,
+        Vector2 desiredPushDir,
+        out Vector2 targetPoint,
+        out float myContactT,
+        out Vector2 desiredSwordDir)
+    {
+        Vector2 handle = _context.OpponentHandlePos;
+        Vector2 tip = _context.OpponentTipPos;
+        Vector2 bladeMid = Vector2.Lerp(_context.OpponentHandlePos, _context.OpponentTipPos, 0.55f);
+
+        float handleDistance = Vector2.Distance(GetMyContactPoint(_bladeContactT), handle);
+        float tipDistance = Vector2.Distance(GetMyContactPoint(_bladeContactT), tip);
+
+        bool handleAvailable =
+            handleDistance <= _handleTargetMaxDistance ||
+            Vector2.Distance(_context.MyTipPos, handle) <= _handleTargetMaxDistance;
+
+        bool tipAvailable =
+            tipDistance <= _tipTargetMaxDistance ||
+            Vector2.Distance(_context.MySwordPos, tip) <= _tipTargetMaxDistance;
+
+        if (handleAvailable)
+        {
+            targetPoint = handle;
+            myContactT = _bladeContactT;
+            desiredSwordDir = ChooseSwordDirectionForContact(targetPoint, myContactT, desiredPushDir, preferCross: false);
+            return;
+        }
+
+        if (tipAvailable)
+        {
+            targetPoint = tip;
+            myContactT = _bladeContactT;
+            desiredSwordDir = ChooseBladeCrossDirection(_context.OpponentSwordDir, desiredPushDir);
+            return;
+        }
+
+        targetPoint = bladeMid;
+        myContactT = _bladeContactT;
+        desiredSwordDir = ChooseBladeCrossDirection(_context.OpponentSwordDir, desiredPushDir);
+    }
+
+    private Vector2 ChooseSwordDirectionForContact(Vector2 targetPoint, float contactT, Vector2 desiredPushDir, bool preferCross)
+    {
+        if (preferCross)
+            return ChooseBladeCrossDirection(_context.OpponentSwordDir, desiredPushDir);
+
+        Vector2 toTargetFromHandle = targetPoint - _context.MyHandlePos;
+
+        if (toTargetFromHandle.sqrMagnitude < 0.0001f)
+            return _context.MySwordDir;
+
+        Vector2 directDir = toTargetFromHandle.normalized;
+        Vector2 crossDir = ChooseBladeCrossDirection(_context.OpponentSwordDir, desiredPushDir);
+
+        float directPushScore = Vector2.Dot(directDir, desiredPushDir);
+        float crossPushScore = Vector2.Dot(crossDir, desiredPushDir);
+
+        if (crossPushScore > directPushScore + 0.25f)
+            return crossDir;
+
+        return directDir;
+    }
+
+    private Vector2 GetMyContactPoint(float t)
+    {
+        return Vector2.Lerp(_context.MyHandlePos, _context.MyTipPos, Mathf.Clamp01(t));
+    }
+
     private SwordAction ChooseAttackAction()
     {
-        Vector2 target = _context.OpponentAttackTargetPos;
+        Vector2 target = GetCurrentAttackTarget();
 
         Vector2 toTargetFromHandle = target - _context.MyHandlePos;
         Vector2 toTargetFromTip = target - _context.MyTipPos;
 
         Vector2 desiredSwordDir = SafeNormalize(toTargetFromHandle, _context.MySwordDir);
 
+        Vector2 moveTarget = target;
+
+        if (IsOpponentSwordBlockingAttackLine(out Vector2 blockPoint) && toTargetFromTip.magnitude > _attackSuccessDistance)
+        {
+            Vector2 attackLine = SafeNormalize(target - _context.MyTipPos, desiredSwordDir);
+            Vector2 normalA = new Vector2(-attackLine.y, attackLine.x);
+            Vector2 normalB = -normalA;
+
+            Vector2 opponentCharacterDir = SafeNormalize(_context.OpponentCharacterPos - blockPoint, attackLine);
+
+            Vector2 flankA = blockPoint + normalA * _attackFlankOffset + opponentCharacterDir * 0.35f;
+            Vector2 flankB = blockPoint + normalB * _attackFlankOffset + opponentCharacterDir * 0.35f;
+
+            float scoreA =
+                -Vector2.Distance(flankA, target) +
+                Vector2.Dot(SafeNormalize(flankA - _context.MySwordPos, attackLine), opponentCharacterDir) * 0.5f;
+
+            float scoreB =
+                -Vector2.Distance(flankB, target) +
+                Vector2.Dot(SafeNormalize(flankB - _context.MySwordPos, attackLine), opponentCharacterDir) * 0.5f;
+
+            moveTarget = scoreA >= scoreB ? flankA : flankB;
+            moveTarget = _context.ClampPointToArena(moveTarget);
+
+            desiredSwordDir = SafeNormalize(target - _context.MyHandlePos, _context.MySwordDir);
+        }
+
         Vector2 desiredHandlePos = target - desiredSwordDir * GetSwordLength();
         desiredHandlePos = _context.ClampPointToArena(desiredHandlePos);
 
         Vector2 moveToIdealHandle = desiredHandlePos - _context.MySwordPos;
+        Vector2 moveToTarget = moveTarget - _context.MyTipPos;
 
         float tipDistance = toTargetFromTip.magnitude;
         float handleDistance = moveToIdealHandle.magnitude;
 
         Vector2 moveVector;
 
-        // √лавна€ правка:
-        // если кончик еще не достал цель, двигаемс€ по направлению кончика к цели,
-        // а не останавливаемс€ из-за того, что руко€ть уже близко к "идеальной" позиции.
         if (tipDistance > _attackSuccessDistance)
         {
-            Vector2 tipChase = SafeNormalize(toTargetFromTip, desiredSwordDir);
+            Vector2 tipChase = SafeNormalize(moveToTarget, desiredSwordDir);
 
             if (handleDistance > _attackHandleDistance)
             {
                 Vector2 handleChase = SafeNormalize(moveToIdealHandle, tipChase);
-
-                // —мешиваем подведение руко€ти и дот€гивание кончиком.
-                // ѕриоритет у кончика, чтобы меч не застревал р€дом с персонажем.
-                moveVector = (tipChase * 0.75f + handleChase * 0.25f).normalized;
+                moveVector = (tipChase * 0.8f + handleChase * 0.2f).normalized;
             }
             else
             {
@@ -270,8 +693,6 @@ public class FSMSword : MonoBehaviour
         }
         else
         {
-            // ”же почти достали Ч продолжаем легкое давление вперед,
-            // чтобы OnTriggerStay2D/OnTriggerEnter2D успел зарегистрировать попадание.
             moveVector = desiredSwordDir;
         }
 
@@ -279,6 +700,40 @@ public class FSMSword : MonoBehaviour
         SwordRotateAction rotate = DirectionToRotateAction(desiredSwordDir);
 
         return new SwordAction(move, rotate);
+    }
+
+    private Vector2 GetOpeningTarget()
+    {
+        Vector2 target = _context.OpponentAttackTargetPos;
+
+        if (!_useOpeningVariation)
+            return target;
+
+        if (_openingPlan == OpeningPlan.Straight)
+            return target;
+
+        Vector2 attackDir = target - _context.MyTipPos;
+
+        if (attackDir.sqrMagnitude < 0.0001f)
+            return target;
+
+        attackDir.Normalize();
+
+        Vector2 side = new Vector2(-attackDir.y, attackDir.x);
+
+        if (_openingPlan == OpeningPlan.Lower)
+            side = -side;
+
+        Vector2 offsetTarget = target + side * _openingSideOffset;
+        return _context.ClampPointToArena(offsetTarget);
+    }
+
+    private Vector2 GetCurrentAttackTarget()
+    {
+        if (_currentState == EnemyState.Opening)
+            return GetOpeningTarget();
+
+        return _context.OpponentAttackTargetPos;
     }
 
     private SwordAction ChooseDefendAction()
@@ -291,9 +746,9 @@ public class FSMSword : MonoBehaviour
         return new SwordAction(move, rotate);
     }
 
-    private SwordAction ChoosePressureAction()
+    private SwordAction ChooseBreakthroughAction()
     {
-        GetPressurePose(out Vector2 desiredHandlePos, out Vector2 desiredSwordDir);
+        GetBreakthroughPose(out Vector2 desiredHandlePos, out Vector2 desiredSwordDir);
 
         SwordMoveAction move = DirectionToMoveAction(desiredHandlePos - _context.MySwordPos);
         SwordRotateAction rotate = DirectionToRotateAction(desiredSwordDir);
@@ -346,12 +801,14 @@ public class FSMSword : MonoBehaviour
         contactPoint += chosenNormal * _deflectSideOffset;
 
         Vector2 pushAwayFromMyChar = contactPoint - _context.MyCharacterPos;
+
         if (pushAwayFromMyChar.sqrMagnitude < 0.0001f)
             pushAwayFromMyChar = Vector2.right;
 
         pushAwayFromMyChar.Normalize();
 
         Vector2 towardOpponentCharacter = _context.OpponentCharacterPos - contactPoint;
+
         if (towardOpponentCharacter.sqrMagnitude < 0.0001f)
             towardOpponentCharacter = Vector2.right;
 
@@ -365,28 +822,46 @@ public class FSMSword : MonoBehaviour
         desiredHandlePos = _context.ClampPointToArena(desiredHandlePos);
     }
 
-    private void GetPressurePose(out Vector2 desiredHandlePos, out Vector2 desiredSwordDir)
+    private void GetBreakthroughPose(out Vector2 desiredHandlePos, out Vector2 desiredSwordDir)
     {
-        Vector2 opponentSwordPos = _context.OpponentSwordPos;
+        Vector2 opponentHandle = _context.OpponentHandlePos;
+        Vector2 opponentTip = _context.OpponentTipPos;
+        Vector2 opponentDir = _context.OpponentSwordDir;
 
-        Vector2 pushOutDir = opponentSwordPos - _context.MyCharacterPos;
-        if (pushOutDir.sqrMagnitude < 0.0001f)
-            pushOutDir = Vector2.right;
+        Vector2 contactPoint = Vector2.Lerp(opponentHandle, opponentTip, _breakthroughContactT);
 
-        pushOutDir.Normalize();
+        Vector2 pushAwayFromMyChar = contactPoint - _context.MyCharacterPos;
 
-        Vector2 towardOpponentCharacter = _context.OpponentCharacterPos - opponentSwordPos;
-        if (towardOpponentCharacter.sqrMagnitude < 0.0001f)
-            towardOpponentCharacter = Vector2.right;
+        if (pushAwayFromMyChar.sqrMagnitude < 0.0001f)
+            pushAwayFromMyChar = Vector2.right;
 
-        towardOpponentCharacter.Normalize();
+        pushAwayFromMyChar.Normalize();
 
-        Vector2 pressureDir = (pushOutDir + towardOpponentCharacter * _pressureTowardPlayerWeight).normalized;
+        Vector2 towardTarget = GetCurrentAttackTarget() - _context.MyTipPos;
 
-        desiredSwordDir = ChooseBladeCrossDirection(_context.OpponentSwordDir, pressureDir);
+        if (towardTarget.sqrMagnitude < 0.0001f)
+            towardTarget = _context.OpponentCharacterPos - _context.MySwordPos;
 
-        Vector2 contactPoint = opponentSwordPos + pressureDir * _pressureContactOffset;
-        desiredHandlePos = contactPoint - desiredSwordDir * (GetSwordLength() * 0.55f);
+        towardTarget = SafeNormalize(towardTarget, _context.MySwordDir);
+
+        Vector2 desiredPush =
+            (pushAwayFromMyChar + towardTarget * _breakthroughTowardTargetWeight).normalized;
+
+        Vector2 normalA = new Vector2(-opponentDir.y, opponentDir.x);
+        Vector2 normalB = -normalA;
+
+        Vector2 side =
+            Vector2.Dot(normalA, desiredPush) >= Vector2.Dot(normalB, desiredPush)
+                ? normalA
+                : normalB;
+
+        contactPoint += side * _breakthroughSideOffset;
+
+        desiredSwordDir = ChooseBladeCrossDirection(opponentDir, desiredPush);
+
+        desiredHandlePos = contactPoint - desiredSwordDir * (GetSwordLength() * 0.52f);
+        desiredHandlePos += towardTarget * 0.25f;
+
         desiredHandlePos = _context.ClampPointToArena(desiredHandlePos);
     }
 
@@ -401,6 +876,49 @@ public class FSMSword : MonoBehaviour
         float scoreB = Vector2.Dot(candidateB, desiredPushDir);
 
         return scoreA >= scoreB ? candidateA : candidateB;
+    }
+
+    private bool IsOpponentSwordBlockingAttackLine(out Vector2 blockPoint)
+    {
+        Vector2 start = _context.MyTipPos;
+        Vector2 end = GetCurrentAttackTarget();
+        Vector2 line = end - start;
+
+        blockPoint = _context.OpponentSwordPos;
+
+        if (line.sqrMagnitude < 0.0001f)
+            return false;
+
+        Vector2[] samples =
+        {
+            _context.OpponentHandlePos,
+            Vector2.Lerp(_context.OpponentHandlePos, _context.OpponentTipPos, 0.35f),
+            Vector2.Lerp(_context.OpponentHandlePos, _context.OpponentTipPos, 0.65f),
+            _context.OpponentTipPos
+        };
+
+        float bestDistance = float.MaxValue;
+        Vector2 bestPoint = samples[0];
+
+        foreach (Vector2 sample in samples)
+        {
+            float t = Vector2.Dot(sample - start, line) / line.sqrMagnitude;
+
+            if (t < 0.05f || t > 0.95f)
+                continue;
+
+            Vector2 closest = start + line * t;
+            float distance = Vector2.Distance(sample, closest);
+
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestPoint = sample;
+            }
+        }
+
+        blockPoint = bestPoint;
+        return bestDistance <= _attackLineBlockDistance;
     }
 
     private SwordMoveAction DirectionToMoveAction(Vector2 direction)
@@ -464,12 +982,20 @@ public class FSMSword : MonoBehaviour
 
         switch (_currentState)
         {
+            case EnemyState.Opening:
+                SetColor(_openingColor);
+                break;
+
             case EnemyState.Defend:
                 SetColor(_defendColor);
                 break;
 
-            case EnemyState.Pressure:
-                SetColor(_pressureColor);
+            case EnemyState.ContactControl:
+                SetColor(_contactControlColor);
+                break;
+
+            case EnemyState.Breakthrough:
+                SetColor(_breakthroughColor);
                 break;
 
             case EnemyState.Attack:
@@ -524,7 +1050,7 @@ public class FSMSword : MonoBehaviour
 
     private void TryRegisterCharacterHit(Collider2D other)
     {
-        if (!other.CompareTag("Player"))
+        if (!IsOpponentCharacterCollider(other))
             return;
 
         if (Time.time - _lastHitTime < _hitCooldown)
@@ -535,6 +1061,84 @@ public class FSMSword : MonoBehaviour
 
         _lastHitTime = Time.time;
         RegisterHit();
+    }
+
+    private bool IsOpponentCharacterCollider(Collider2D col)
+    {
+        if (col == null)
+            return false;
+
+        if (gameObject.CompareTag("PlayerSword"))
+            return col.CompareTag("Enemy");
+
+        if (gameObject.CompareTag("EnemySword"))
+            return col.CompareTag("Player");
+
+        return col.CompareTag("Player") || col.CompareTag("Enemy");
+    }
+
+    private bool IsOpponentSwordCollision(Collision2D collision)
+    {
+        if (collision == null)
+            return false;
+
+        GameObject obj = collision.gameObject;
+
+        if (IsOpponentSwordObject(obj))
+            return true;
+
+        if (collision.rigidbody != null && IsOpponentSwordObject(collision.rigidbody.gameObject))
+            return true;
+
+        Transform parent = obj.transform.parent;
+
+        while (parent != null)
+        {
+            if (IsOpponentSwordObject(parent.gameObject))
+                return true;
+
+            parent = parent.parent;
+        }
+
+        return false;
+    }
+
+    private bool IsOpponentSwordObject(GameObject obj)
+    {
+        if (obj == null)
+            return false;
+
+        if (gameObject.CompareTag("PlayerSword"))
+            return obj.CompareTag("EnemySword");
+
+        if (gameObject.CompareTag("EnemySword"))
+            return obj.CompareTag("PlayerSword");
+
+        return obj.CompareTag("PlayerSword") || obj.CompareTag("EnemySword");
+    }
+
+    private SwordPhysics GetOtherSwordPhysics(Collision2D collision)
+    {
+        if (collision == null)
+            return null;
+
+        if (collision.rigidbody != null)
+        {
+            SwordPhysics physicsFromRb = collision.rigidbody.GetComponent<SwordPhysics>();
+
+            if (physicsFromRb != null)
+                return physicsFromRb;
+        }
+
+        if (collision.collider != null)
+        {
+            SwordPhysics physicsFromCollider = collision.collider.GetComponentInParent<SwordPhysics>();
+
+            if (physicsFromCollider != null)
+                return physicsFromCollider;
+        }
+
+        return collision.gameObject.GetComponentInParent<SwordPhysics>();
     }
 
     private bool IsBladeOrTipTouchingCharacter(Collider2D characterCollider)
@@ -561,7 +1165,7 @@ public class FSMSword : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (!collision.gameObject.CompareTag("PlayerSword"))
+        if (!IsOpponentSwordCollision(collision))
             return;
 
         if (Time.time - _lastCollisionTime < _collisionCooldown)
@@ -569,8 +1173,43 @@ public class FSMSword : MonoBehaviour
 
         _lastCollisionTime = Time.time;
 
+        if (collision.contactCount <= 0)
+            return;
+
+        SwordPhysics otherPhysics = GetOtherSwordPhysics(collision);
+
+        if (_swordPhysics != null && otherPhysics != null)
+        {
+            ContactPoint2D contact = collision.GetContact(0);
+            Vector2 contactPoint = contact.point;
+
+            string myPart = _swordPhysics.GetCollisionPartString(contactPoint);
+            string otherPart = otherPhysics.GetCollisionPartString(contactPoint);
+
+            bool successfulContact =
+                (myPart == "Blade" && otherPart == "Tip") ||
+                (myPart == "Blade" && otherPart == "Handle") ||
+                (myPart == "Tip" && otherPart == "Handle") ||
+                (myPart == "Blade" && otherPart == "Blade");
+
+            if (successfulContact)
+            {
+                _lastSuccessfulContactTime = Time.time;
+                BeginAttack();
+                return;
+            }
+        }
+
         if (_currentState == EnemyState.Attack && _stateTimer >= _attackCommitTime * 0.5f)
-            SetState(EnemyState.Recover);
+        {
+            SetState(EnemyState.ContactControl);
+            return;
+        }
+
+        if (_currentState == EnemyState.ContactControl)
+        {
+            return;
+        }
     }
 
     public void RegisterHit()
@@ -588,11 +1227,15 @@ public class FSMSword : MonoBehaviour
 
     public void ResetState()
     {
-        _currentState = EnemyState.Defend;
+        _currentState = EnemyState.Opening;
         _stateTimer = 0f;
+        _roundStartTime = Time.time;
         _attackStartTipDistance = 0f;
         _lastCollisionTime = 0f;
         _lastHitTime = 0f;
+        _lastSuccessfulContactTime = -999f;
+
+        ChooseOpeningPlan();
 
         if (_mySpawnPoint != null)
             transform.position = _mySpawnPoint.position;
@@ -608,7 +1251,31 @@ public class FSMSword : MonoBehaviour
         if (_executor != null)
             _executor.ResetExecutor();
 
-        SetColor(_defendColor);
+        SetColor(_openingColor);
+    }
+
+    private void ChooseOpeningPlan()
+    {
+        if (!_useOpeningVariation)
+        {
+            _openingPlan = OpeningPlan.Straight;
+            return;
+        }
+
+        float straightChance = Mathf.Clamp01(_openingStraightChance);
+        float upperChance = Mathf.Clamp01(_openingUpperChance);
+
+        if (straightChance + upperChance > 1f)
+            upperChance = 1f - straightChance;
+
+        float roll = Random.value;
+
+        if (roll < straightChance)
+            _openingPlan = OpeningPlan.Straight;
+        else if (roll < straightChance + upperChance)
+            _openingPlan = OpeningPlan.Upper;
+        else
+            _openingPlan = OpeningPlan.Lower;
     }
 
     private void FlashColor(Color color, float duration)
@@ -631,12 +1298,20 @@ public class FSMSword : MonoBehaviour
 
         switch (_currentState)
         {
+            case EnemyState.Opening:
+                _swordRenderer.material.color = _openingColor;
+                break;
+
             case EnemyState.Defend:
                 _swordRenderer.material.color = _defendColor;
                 break;
 
-            case EnemyState.Pressure:
-                _swordRenderer.material.color = _pressureColor;
+            case EnemyState.ContactControl:
+                _swordRenderer.material.color = _contactControlColor;
+                break;
+
+            case EnemyState.Breakthrough:
+                _swordRenderer.material.color = _breakthroughColor;
                 break;
 
             case EnemyState.Attack:
@@ -665,66 +1340,18 @@ public class FSMSword : MonoBehaviour
         Gizmos.DrawSphere(_context.OpponentAttackTargetPos, 0.12f);
 
         Gizmos.color = Color.green;
-        Gizmos.DrawLine(_context.MyTipPos, _context.OpponentAttackTargetPos);
+        Gizmos.DrawLine(_context.MyTipPos, GetCurrentAttackTarget());
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawLine(_context.OpponentTipPos, _context.MyCharacterPos);
 
-        GetDeflectPoseSafeForGizmos(out Vector2 deflectHandle, out Vector2 deflectDir);
+        Gizmos.color = Color.blue;
+        Gizmos.DrawSphere(_context.OpponentHandlePos, 0.11f);
 
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawSphere(deflectHandle, 0.1f);
-        Gizmos.DrawRay(deflectHandle, deflectDir * GetSwordLengthSafeForGizmos());
-    }
-
-    private void GetDeflectPoseSafeForGizmos(out Vector2 desiredHandlePos, out Vector2 desiredSwordDir)
-    {
-        if (_context == null)
+        if (IsOpponentSwordBlockingAttackLine(out Vector2 blockPoint))
         {
-            desiredHandlePos = transform.position;
-            desiredSwordDir = Vector2.right;
-            return;
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawSphere(blockPoint, 0.12f);
         }
-
-        Vector2 opponentHandle = _context.OpponentHandlePos;
-        Vector2 opponentTip = _context.OpponentTipPos;
-        Vector2 opponentDir = _context.OpponentSwordDir;
-
-        Vector2 normalA = new Vector2(-opponentDir.y, opponentDir.x);
-        Vector2 normalB = -normalA;
-
-        Vector2 opponentSwordMid = (opponentHandle + opponentTip) * 0.5f;
-        Vector2 toMyCharacter = _context.MyCharacterPos - opponentSwordMid;
-
-        if (toMyCharacter.sqrMagnitude < 0.0001f)
-            toMyCharacter = Vector2.left;
-
-        toMyCharacter.Normalize();
-
-        Vector2 chosenNormal =
-            Vector2.Dot(normalA, toMyCharacter) > Vector2.Dot(normalB, toMyCharacter)
-                ? normalA
-                : normalB;
-
-        Vector2 contactPoint = Vector2.Lerp(opponentHandle, opponentTip, _deflectContactT);
-        contactPoint += chosenNormal * _deflectSideOffset;
-
-        Vector2 pushAwayFromMyChar = contactPoint - _context.MyCharacterPos;
-        if (pushAwayFromMyChar.sqrMagnitude < 0.0001f)
-            pushAwayFromMyChar = Vector2.right;
-
-        pushAwayFromMyChar.Normalize();
-
-        desiredSwordDir = ChooseBladeCrossDirection(opponentDir, pushAwayFromMyChar);
-        desiredHandlePos = contactPoint - desiredSwordDir * (GetSwordLengthSafeForGizmos() * 0.55f);
-        desiredHandlePos = _context.ClampPointToArena(desiredHandlePos);
-    }
-
-    private float GetSwordLengthSafeForGizmos()
-    {
-        if (_context == null)
-            return 1.5f;
-
-        return Mathf.Max(0.1f, Vector2.Distance(_context.MyHandlePos, _context.MyTipPos));
     }
 }

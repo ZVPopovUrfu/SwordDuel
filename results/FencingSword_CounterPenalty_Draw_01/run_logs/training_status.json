@@ -1,0 +1,66 @@
+{
+    "FencingSword": {
+        "checkpoints": [
+            {
+                "steps": 14699796,
+                "file_path": "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-14699796.onnx",
+                "reward": 0.8014947927405691,
+                "creation_time": 1778133087.7076561,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-14699796.pt"
+                ]
+            },
+            {
+                "steps": 14799758,
+                "file_path": "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-14799758.onnx",
+                "reward": 4.486441148865607,
+                "creation_time": 1778133230.4679203,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-14799758.pt"
+                ]
+            },
+            {
+                "steps": 14899952,
+                "file_path": "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-14899952.onnx",
+                "reward": 0.679743525291246,
+                "creation_time": 1778133361.322222,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-14899952.pt"
+                ]
+            },
+            {
+                "steps": 14999773,
+                "file_path": "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-14999773.onnx",
+                "reward": 4.132763958140595,
+                "creation_time": 1778133504.7927828,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-14999773.pt"
+                ]
+            },
+            {
+                "steps": 15000029,
+                "file_path": "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-15000029.onnx",
+                "reward": 4.132763958140595,
+                "creation_time": 1778133504.8593085,
+                "auxillary_file_paths": [
+                    "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-15000029.pt"
+                ]
+            }
+        ],
+        "elo": 2043.87836504759,
+        "final_checkpoint": {
+            "steps": 15000029,
+            "file_path": "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword.onnx",
+            "reward": 4.132763958140595,
+            "creation_time": 1778133504.8593085,
+            "auxillary_file_paths": [
+                "results\\FencingSword_CounterPenalty_Draw_01\\FencingSword\\FencingSword-15000029.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.1.0",
+        "torch_version": "2.0.1+cpu"
+    }
+}

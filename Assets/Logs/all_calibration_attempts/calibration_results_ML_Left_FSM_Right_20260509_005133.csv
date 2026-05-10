@@ -1,0 +1,12 @@
+﻿sep=;
+round;configuration;ml_model;fsm_version;result;duration_seconds;first_clash_owner;time_to_first_clash_seconds;first_clash_fsm_part;first_clash_ml_part;fsm_wins_total;ml_wins_total;draws_total;fsm_first_clashes_total;ml_first_clashes_total;contested_first_clashes_total;no_first_clashes_total
+1;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;4,6600;None;;;;0;1;0;0;0;0;1
+2;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;3,6484;FSM;1,5284;Blade;Tip;0;2;0;1;0;0;1
+3;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;Draw;30,0011;ML;4,5064;Tip;Blade;0;2;1;1;1;0;1
+4;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;3,9348;None;;;;0;3;1;1;1;0;2
+5;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;3,9090;None;;;;0;4;1;1;1;0;3
+6;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;3,9094;None;;;;0;5;1;1;1;0;4
+7;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;3,4691;None;;;;0;6;1;1;1;0;5
+8;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;4,7879;None;;;;0;7;1;1;1;0;6
+9;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;3,9284;None;;;;0;8;1;1;1;0;7
+10;ML_Left_FSM_Right;FencingSword_CounterPenalty_Draw_15M;FSM_Current;MLWin;3,9096;None;;;;0;9;1;1;1;0;8

@@ -22,6 +22,11 @@ public class SwordActionExecutor : MonoBehaviour
     private SwordAction _currentAction;
     private Vector2 _currentVelocity;
 
+    public SwordAction LastAction => _currentAction;
+    public string LastMoveActionName => _currentAction.Move.ToString();
+    public string LastRotateActionName => _currentAction.Rotate.ToString();
+    public string LastCombinedActionName => $"{_currentAction.Move}_{_currentAction.Rotate}";
+
     private void Awake()
     {
         if (_rb == null)

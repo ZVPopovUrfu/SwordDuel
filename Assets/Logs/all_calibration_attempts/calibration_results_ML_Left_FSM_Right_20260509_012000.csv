@@ -1,0 +1,2 @@
+﻿sep=;
+round;configuration;ml_model;fsm_version;result;duration_seconds;first_clash_owner;time_to_first_clash_seconds;first_clash_fsm_part;first_clash_ml_part;fsm_wins_total;ml_wins_total;draws_total;fsm_first_clashes_total;ml_first_clashes_total;contested_first_clashes_total;no_first_clashes_total

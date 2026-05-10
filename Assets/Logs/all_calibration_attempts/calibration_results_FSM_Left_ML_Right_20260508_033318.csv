@@ -1,0 +1,11 @@
+﻿round,configuration,ml_model,fsm_version,result,duration_seconds,time_to_first_hit_seconds,fsm_wins_total,ml_wins_total,draws_total,fsm_first_hits_total,ml_first_hits_total
+1,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,MLWin,5,6200,5,6200,0,1,0,0,1
+2,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,MLWin,0,0086,0,0086,0,2,0,0,2
+3,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,Draw,30,0011,-1,0000,0,2,1,0,2
+4,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,MLWin,6,3379,6,3379,0,3,1,0,3
+5,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,MLWin,0,0091,0,0091,0,4,1,0,4
+6,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,Draw,30,0001,-1,0000,0,4,2,0,4
+7,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,Draw,30,0014,-1,0000,0,4,3,0,4
+8,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,Draw,30,0007,-1,0000,0,4,4,0,4
+9,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,Draw,30,0012,-1,0000,0,4,5,0,4
+10,FSM_Left_ML_Right,FencingSword_CounterPenalty_Draw_15M,FSM_Current,MLWin,4,7687,4,7687,0,5,5,0,5

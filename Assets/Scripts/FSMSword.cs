@@ -139,6 +139,9 @@ public class FSMSword : MonoBehaviour
     public System.Action OnHit;
     public System.Action OnGotHit;
 
+    public string CurrentStateName => _currentState.ToString();
+    public string CurrentOpeningPlanName => _openingPlan.ToString();
+
     private bool IsKnockedBack
     {
         get

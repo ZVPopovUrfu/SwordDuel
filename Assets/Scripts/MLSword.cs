@@ -131,6 +131,10 @@ public class MLSword : Agent
     public System.Action OnHit;
     public System.Action OnGotHit;
 
+    public SwordMoveAction LastMoveAction => _lastMoveAction;
+    public SwordRotateAction LastRotateAction => _lastRotateAction;
+    public string CurrentContextStateName => GetContextStateName();
+
     private float _episodeTimer;
     private float _lastHitTime;
     private float _lastCollisionTime;
@@ -250,6 +254,26 @@ public class MLSword : Agent
         float y = Random.Range(center.y - halfH, center.y + halfH);
 
         return new Vector3(x, y, transform.position.z);
+    }
+
+
+    private string GetContextStateName()
+    {
+        if (_context == null)
+            return "Unknown";
+
+        float swordDistance = Vector2.Distance(_context.MySwordPos, _context.OpponentSwordPos);
+
+        if (swordDistance <= 1.25f)
+            return "Contact";
+
+        if (_context.OpponentThreatDistance <= _dangerRadius)
+            return "Defending";
+
+        if (_context.MyThreatDistance <= _context.OpponentThreatDistance + _attackTieMargin)
+            return "Attacking";
+
+        return "Neutral";
     }
 
     private void CachePreviousState()

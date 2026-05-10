@@ -22,6 +22,8 @@ public class SwordActionExecutor : MonoBehaviour
     private SwordAction _currentAction;
     private Vector2 _currentVelocity;
 
+    private SwordPhysics _swordPhysics;
+
     public SwordAction LastAction => _currentAction;
     public string LastMoveActionName => _currentAction.Move.ToString();
     public string LastRotateActionName => _currentAction.Rotate.ToString();
@@ -31,6 +33,8 @@ public class SwordActionExecutor : MonoBehaviour
     {
         if (_rb == null)
             _rb = GetComponent<Rigidbody2D>();
+
+        _swordPhysics = GetComponent<SwordPhysics>();
 
         if (_rb != null)
         {
@@ -48,6 +52,19 @@ public class SwordActionExecutor : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (_swordPhysics != null && _swordPhysics.IsKnockedBack())
+        {
+            _currentVelocity = Vector2.zero;
+
+            if (_rb != null)
+            {
+                _rb.linearVelocity = Vector2.zero;
+                _rb.angularVelocity = 0f;
+            }
+
+            return;
+        }
+
         ExecuteCurrentAction();
 
         if (_clampToArena)

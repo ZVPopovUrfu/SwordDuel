@@ -27,9 +27,13 @@ public class PlayerSwordController : MonoBehaviour
     private InputAction moveAction;
     private InputAction rotateAction;
 
+    private SwordPhysics swordPhysics;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+
+        swordPhysics = GetComponent<SwordPhysics>();
 
         if (rb != null)
         {
@@ -70,6 +74,19 @@ public class PlayerSwordController : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (swordPhysics != null && swordPhysics.IsKnockedBack())
+        {
+            currentVelocity = Vector2.zero;
+
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector2.zero;
+                rb.angularVelocity = 0f;
+            }
+
+            return;
+        }
+
         MoveSword();
         RotateSword();
     }
